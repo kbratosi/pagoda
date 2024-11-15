@@ -10,11 +10,11 @@ Contacts:
 We train one-step text-to-image generator that is progressively growing in its resolution. For that, we only need low-resolution diffusion models.
 
 ## Checkpoints
-- Download and put the [checkpoints] in the file of author_ckpt
+- Download and put the [checkpoints] in the file of author_ckpt.
 
 ## Training
 - For Stage2 distillation, run `bash commands/res64to64.sh`
-- For Stage3 super-resolution, run from `bash commands/64to128.sh` to `bash commands/64to512.sh` sequentially 
+- For Stage3 super-resolution, run from `bash commands/64to128.sh` to `bash commands/64to512.sh` sequentially. 
 
 ## Sampling
 
