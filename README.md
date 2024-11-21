@@ -2,6 +2,7 @@
 <p align="center">
 <img src="/assets/pagoda.png" alt="pagoda" width="60%"/>
 </p>
+
 This repository houses the official PyTorch implementation of the paper titled [PaGoDA: Progressive Growing of a One-Step Generator from a Low-Resolution Diffusion Teacher](https://arxiv.org/abs/2405.14822) on ImageNet ranging from 64x64 to 512x512, which is presented at NeurIPS 2024. Our code is heavily based on [CTM](https://github.com/sony/ctm).
 
 **Papers**:
