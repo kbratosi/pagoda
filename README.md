@@ -15,7 +15,8 @@ This repository houses the official PyTorch implementation of the paper titled [
 We train one-step text-to-image generator that is progressively growing in its resolution. For that, we only need low-resolution diffusion models.
 
 ## Checkpoints and Datasets
-- You may find PaGoDA's [checkpoints](https://drive.google.com/drive/folders/1tlm_DwPWcIIfF3s9qm_fHOeUjENTSOKx?usp=sharing).
+- You may find PaGoDA's [checkpoints](https://drive.google.com/drive/folders/1tlm_DwPWcIIfF3s9qm_fHOeUjENTSOKx?usp=sharing). It contains:
+    - dd
 - You may find the preprocessed data-to-noise datasets here (released soon) for training.
 
 ## Training
