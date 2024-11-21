@@ -16,7 +16,9 @@ We train one-step text-to-image generator that is progressively growing in its r
 
 ## Checkpoints and Datasets
 - You may find PaGoDA's [checkpoints](https://drive.google.com/drive/folders/1tlm_DwPWcIIfF3s9qm_fHOeUjENTSOKx?usp=sharing). It contains:
-    - dd
+    - Stage 1's pretrained Diffusion Models at resolutions 32x32 and 64x64
+    - Stage 2's PaGoDA's generator at resolutions 32x32 and 64x64
+    - Stage 3's PaGoDA's generator (1) from resolution 64x64 $\To$ 128x128; (2) 
 - You may find the preprocessed data-to-noise datasets here (released soon) for training.
 
 ## Training
