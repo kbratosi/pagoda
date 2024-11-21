@@ -9,8 +9,9 @@ Contacts:
 ## TL;DR
 We train one-step text-to-image generator that is progressively growing in its resolution. For that, we only need low-resolution diffusion models.
 
-## Checkpoints
+## Checkpoints and Datasets
 - Download and put the [checkpoints](https://drive.google.com/drive/folders/1tlm_DwPWcIIfF3s9qm_fHOeUjENTSOKx?usp=sharing) in the file of author_ckpt.
+- The preprocessed data-to-noise datasets can be found here.
 
 ## Training
 - For Stage2 distillation, run `bash commands/res64to64.sh`
