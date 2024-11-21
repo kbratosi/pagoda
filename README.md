@@ -5,9 +5,6 @@
 
 This repository houses the official PyTorch implementation of the paper titled [PaGoDA: Progressive Growing of a One-Step Generator from a Low-Resolution Diffusion Teacher](https://arxiv.org/abs/2405.14822) on ImageNet ranging from 64x64 to 512x512, which is presented at NeurIPS 2024. Our code is heavily based on [CTM](https://github.com/sony/ctm).
 
-**Papers**:
-* [arXiv](https://arxiv.org/abs/2405.14822)
-* [OpenReview](https://openreview.net/forum?id=h5zYGF68KH&referrer=%5BAuthor%20Console%5D(%2Fgroup%3Fid%3DNeurIPS.cc%2F2024%2FConference%2FAuthors%23your-submissions)
 
 
 **Contacts**:
