@@ -15,10 +15,10 @@ This repository houses the official PyTorch implementation of the paper titled [
 We train one-step text-to-image generator that is progressively growing in its resolution. For that, we only need low-resolution diffusion models.
 
 ## Checkpoints and Datasets
-- You may find PaGoDA's [checkpoints](https://drive.google.com/drive/folders/1tlm_DwPWcIIfF3s9qm_fHOeUjENTSOKx?usp=sharing). It contains:
+- You may find PaGoDA's [checkpoints](https://drive.google.com/drive/folders/1tlm_DwPWcIIfF3s9qm_fHOeUjENTSOKx?usp=sharing) on ImageNet. It contains:
     - Stage 1's pretrained Diffusion Models at resolutions 32x32 and 64x64
     - Stage 2's PaGoDA's generator at resolutions 32x32 and 64x64
-    - Stage 3's PaGoDA's generator (1) from resolution 64x64 $\To$ 128x128; (2) 
+    - Stage 3's PaGoDA's generator (1) from resolution 64x64 → 128x128; (2) from resolution 64x64 → 256x256; (3) from resolution 64x64 → 512x512
 - You may find the preprocessed data-to-noise datasets here (released soon) for training.
 
 ## Training
