@@ -1020,126 +1020,126 @@ class UNetModel(nn.Module):
         #print("after out: ", h.shape)
         return h
 
-if __name__ == "__main__":
-    if encoder_channel_mult == "":
-        if input_size == 512:
-            encoder_channel_mult = (0.5, 1, 1, 2, 2, 4, 4)
-        elif input_size == 256:
-            encoder_channel_mult = (1, 1, 2, 2, 4, 4)
-        elif input_size == 128:
-            encoder_channel_mult = (1, 1, 2, 3, 4)
-        elif input_size == 64:
-            encoder_channel_mult = (1, 2, 3, 4)
-            if args.new and type_ == 'decoder':
-                if output_size == 256:
-                    encoder_channel_mult = (1, 1, 1, 2, 3, 4)
-                elif output_size == 128:
-                    encoder_channel_mult = (1, 1, 2, 3, 4)
-                else:
-                    raise NotImplementedError
-        elif input_size == 32:
-            if new_arch == 'enc_dec':
-                encoder_channel_mult = (2, 3, 4)
-            else:
-                encoder_channel_mult = (1, 2, 4)
-        elif input_size == 16:
-            encoder_channel_mult = (3, 4)
-        elif input_size == 8:
-            encoder_channel_mult = (4,)
-        else:
-            raise ValueError(f"unsupported image size: {input_size}")
-    else:
-        encoder_channel_mult = tuple(int(ch_mult) for ch_mult in encoder_channel_mult.split(","))
-    print("encoder_channel_mult: ", input_size, encoder_channel_mult)
-    if decoder_channel_mult == "":
-        if output_size == 512:
-            # decoder_channel_mult = (0.5, 1, 1, 2, 2, 4, 4)
-            if input_size == 32:
-                if new_arch == 'only_dec':
-                    decoder_channel_mult = (0.5, 1, 1, 1, 2, 2, 4)
-                elif new_arch == 'enc_dec':
-                    decoder_channel_mult = (0.5, 1, 1, 1, 2, 3, 4)
-                else:
-                    decoder_channel_mult = (0.5, 1, 1, 1, 1, 2, 4)
-            else:
-                decoder_channel_mult = (0.5, 1, 1, 1, 1, 2, 4)
-        elif output_size == 256:
-            # decoder_channel_mult = (1, 1, 2, 2, 4, 4)
-            if input_size == 32:
-                if new_arch == 'only_dec':
-                    decoder_channel_mult = (1, 1, 1, 2, 2, 4)
-                elif new_arch == 'enc_dec':
-                    decoder_channel_mult = (1, 1, 1, 2, 3, 4)
-                else:
-                    decoder_channel_mult = (1, 1, 1, 1, 2, 4)
-            else:
-                decoder_channel_mult = (1, 1, 1, 2, 3, 4)
-        elif output_size == 128:
-            if input_size == 32:
-                if new_arch == 'only_dec':
-                    decoder_channel_mult = (1, 1, 2, 2, 4)
-                elif new_arch == 'enc_dec':
-                    decoder_channel_mult = (1, 1, 2, 3, 4)
-                else:
-                    decoder_channel_mult = (1, 1, 1, 2, 4)
-            else:
-                decoder_channel_mult = (1, 1, 2, 3, 4)
-        elif output_size == 64:
-            if input_size == 32:
-                if new_arch == 'only_dec':
-                    decoder_channel_mult = (1, 2, 2, 4)
-                elif new_arch == 'enc_dec':
-                    decoder_channel_mult = (1, 2, 3, 4)
-                else:
-                    decoder_channel_mult = (1, 1, 2, 4)
-            else:
-                decoder_channel_mult = (1, 2, 3, 4)
-        elif output_size == 32:
-            decoder_channel_mult = (1, 2, 4)
-        else:
-            raise ValueError(f"unsupported image size: {output_size}")
-    else:
-        try:
-            decoder_channel_mult = tuple(int(ch_mult) for ch_mult in decoder_channel_mult.split(","))
-        except:
-            decoder_channel_mult = tuple(float(ch_mult) for ch_mult in decoder_channel_mult.split(","))
-    print("decoder_channel_mult: ", output_size, decoder_channel_mult)
-    attention_ds = []
-    for res in attention_resolutions.split(","):
-        attention_ds.append(output_size // int(res) if args.new and type_ == 'decoder' else input_size // int(res))
-    # print(attention_ds)
-    # if type_ == 'decoder':
-    #    import sys
-    #    sys.exit()
-    from .unet import UNetModel
+# if __name__ == "__main__":
+#     if encoder_channel_mult == "":
+#         if input_size == 512:
+#             encoder_channel_mult = (0.5, 1, 1, 2, 2, 4, 4)
+#         elif input_size == 256:
+#             encoder_channel_mult = (1, 1, 2, 2, 4, 4)
+#         elif input_size == 128:
+#             encoder_channel_mult = (1, 1, 2, 3, 4)
+#         elif input_size == 64:
+#             encoder_channel_mult = (1, 2, 3, 4)
+#             if args.new and type_ == 'decoder':
+#                 if output_size == 256:
+#                     encoder_channel_mult = (1, 1, 1, 2, 3, 4)
+#                 elif output_size == 128:
+#                     encoder_channel_mult = (1, 1, 2, 3, 4)
+#                 else:
+#                     raise NotImplementedError
+#         elif input_size == 32:
+#             if new_arch == 'enc_dec':
+#                 encoder_channel_mult = (2, 3, 4)
+#             else:
+#                 encoder_channel_mult = (1, 2, 4)
+#         elif input_size == 16:
+#             encoder_channel_mult = (3, 4)
+#         elif input_size == 8:
+#             encoder_channel_mult = (4,)
+#         else:
+#             raise ValueError(f"unsupported image size: {input_size}")
+#     else:
+#         encoder_channel_mult = tuple(int(ch_mult) for ch_mult in encoder_channel_mult.split(","))
+#     print("encoder_channel_mult: ", input_size, encoder_channel_mult)
+#     if decoder_channel_mult == "":
+#         if output_size == 512:
+#             # decoder_channel_mult = (0.5, 1, 1, 2, 2, 4, 4)
+#             if input_size == 32:
+#                 if new_arch == 'only_dec':
+#                     decoder_channel_mult = (0.5, 1, 1, 1, 2, 2, 4)
+#                 elif new_arch == 'enc_dec':
+#                     decoder_channel_mult = (0.5, 1, 1, 1, 2, 3, 4)
+#                 else:
+#                     decoder_channel_mult = (0.5, 1, 1, 1, 1, 2, 4)
+#             else:
+#                 decoder_channel_mult = (0.5, 1, 1, 1, 1, 2, 4)
+#         elif output_size == 256:
+#             # decoder_channel_mult = (1, 1, 2, 2, 4, 4)
+#             if input_size == 32:
+#                 if new_arch == 'only_dec':
+#                     decoder_channel_mult = (1, 1, 1, 2, 2, 4)
+#                 elif new_arch == 'enc_dec':
+#                     decoder_channel_mult = (1, 1, 1, 2, 3, 4)
+#                 else:
+#                     decoder_channel_mult = (1, 1, 1, 1, 2, 4)
+#             else:
+#                 decoder_channel_mult = (1, 1, 1, 2, 3, 4)
+#         elif output_size == 128:
+#             if input_size == 32:
+#                 if new_arch == 'only_dec':
+#                     decoder_channel_mult = (1, 1, 2, 2, 4)
+#                 elif new_arch == 'enc_dec':
+#                     decoder_channel_mult = (1, 1, 2, 3, 4)
+#                 else:
+#                     decoder_channel_mult = (1, 1, 1, 2, 4)
+#             else:
+#                 decoder_channel_mult = (1, 1, 2, 3, 4)
+#         elif output_size == 64:
+#             if input_size == 32:
+#                 if new_arch == 'only_dec':
+#                     decoder_channel_mult = (1, 2, 2, 4)
+#                 elif new_arch == 'enc_dec':
+#                     decoder_channel_mult = (1, 2, 3, 4)
+#                 else:
+#                     decoder_channel_mult = (1, 1, 2, 4)
+#             else:
+#                 decoder_channel_mult = (1, 2, 3, 4)
+#         elif output_size == 32:
+#             decoder_channel_mult = (1, 2, 4)
+#         else:
+#             raise ValueError(f"unsupported image size: {output_size}")
+#     else:
+#         try:
+#             decoder_channel_mult = tuple(int(ch_mult) for ch_mult in decoder_channel_mult.split(","))
+#         except:
+#             decoder_channel_mult = tuple(float(ch_mult) for ch_mult in decoder_channel_mult.split(","))
+#     print("decoder_channel_mult: ", output_size, decoder_channel_mult)
+#     attention_ds = []
+#     for res in attention_resolutions.split(","):
+#         attention_ds.append(output_size // int(res) if args.new and type_ == 'decoder' else input_size // int(res))
+#     # print(attention_ds)
+#     # if type_ == 'decoder':
+#     #    import sys
+#     #    sys.exit()
+#     from .unet import UNetModel
 
-    return UNetModel(
-        input_size=input_size,
-        output_size=output_size,
-        model_channels_high=num_channels_high,
-        use_scale_shift_norm_high=use_scale_shift_norm_high,
-        num_res_blocks_high=num_res_blocks_high,
-        encoder_channel_mult=encoder_channel_mult,
-        decoder_channel_mult=decoder_channel_mult,
-        attention_resolutions=tuple(attention_ds),
-        in_channels=3,
-        model_channels=num_channels,
-        out_channels=(3 if not learn_sigma else 6),
-        num_res_blocks=num_res_blocks,
-        # attention_resolutions=tuple(attention_ds),
-        dropout=dropout,
-        # channel_mult=channel_mult,
-        num_classes=(args.num_classes if class_cond else None),
-        use_checkpoint=use_checkpoint,
-        use_fp16=use_fp16,
-        num_heads=num_heads,
-        num_head_channels=num_head_channels,
-        num_heads_upsample=num_heads_upsample,
-        use_scale_shift_norm=use_scale_shift_norm,
-        resblock_updown=resblock_updown,
-        use_new_attention_order=use_new_attention_order,
-        training_mode=training_mode,
-        new=args.new,
-        no_grad=(args.image_size != args.input_size),
-        attention_type=attention_type,
-    )
+#     return UNetModel(
+#         input_size=input_size,
+#         output_size=output_size,
+#         model_channels_high=num_channels_high,
+#         use_scale_shift_norm_high=use_scale_shift_norm_high,
+#         num_res_blocks_high=num_res_blocks_high,
+#         encoder_channel_mult=encoder_channel_mult,
+#         decoder_channel_mult=decoder_channel_mult,
+#         attention_resolutions=tuple(attention_ds),
+#         in_channels=3,
+#         model_channels=num_channels,
+#         out_channels=(3 if not learn_sigma else 6),
+#         num_res_blocks=num_res_blocks,
+#         # attention_resolutions=tuple(attention_ds),
+#         dropout=dropout,
+#         # channel_mult=channel_mult,
+#         num_classes=(args.num_classes if class_cond else None),
+#         use_checkpoint=use_checkpoint,
+#         use_fp16=use_fp16,
+#         num_heads=num_heads,
+#         num_head_channels=num_head_channels,
+#         num_heads_upsample=num_heads_upsample,
+#         use_scale_shift_norm=use_scale_shift_norm,
+#         resblock_updown=resblock_updown,
+#         use_new_attention_order=use_new_attention_order,
+#         training_mode=training_mode,
+#         new=args.new,
+#         no_grad=(args.image_size != args.input_size),
+#         attention_type=attention_type,
+#     )
