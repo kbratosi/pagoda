@@ -28,7 +28,10 @@ import numpy as np
 
 
 def main():
+    ### parsing arguments
     args = create_argparser().parse_args()
+    
+    ### select MPI
     if args.use_MPI:
         dist_util.setup_dist(args.device_id)
         #dist_util.setup_dist_guided_diffusion()
@@ -38,6 +41,8 @@ def main():
     logger.configure(args, dir=args.out_dir)
 
     logger.log("creating data loader...")
+    
+    ### setup batch size
     if args.batch_size == -1:
         batch_size = args.global_batch_size // dist.get_world_size()
         if args.global_batch_size % dist.get_world_size() != 0:
@@ -47,6 +52,7 @@ def main():
     else:
         batch_size = args.batch_size
 
+    ### data loader
     data = load_data(
         args=args,
         data_name=args.data_name,
@@ -64,6 +70,7 @@ def main():
         training_mode=args.training_mode,
         proportion=args.data_proportion,
     )
+    ### what is this one for?
     data_for_GAN = load_data(
         args=args,
         data_name=args.data_name,
@@ -97,6 +104,7 @@ def main():
     logger.log(f"loading the teacher model from {args.teacher_model_path}")
     if args.decoder_override or args.load_ode:
         ode, diffusion_ = create_model_and_diffusion(args, type_='ode')
+    ### if model is a pickle
         if args.teacher_model_path.split('.')[-1] == 'pkl':
             if args.decoder_style == 'unet':
                 with open(args.teacher_model_path, 'rb') as f:
@@ -112,6 +120,7 @@ def main():
             #             dst.data.copy_(src.data)
             #             break
             # del pretrained_ode
+    ### model isn't in a pickle format 
         else:
             if args.map_location == 'cuda':
                 #state_dict = torch.load(args.teacher_model_path, map_location=dist_util.dev())  # "cpu")
@@ -133,10 +142,6 @@ def main():
 
     if args.decoder_training:
         decoder, diffusion = create_model_and_diffusion(args, feature_extractor, discriminator_feature_extractor, type_='decoder')
-        # if dist.get_rank() == 0:
-        #     for name, params in decoder.named_parameters():
-        #        print(name)
-        #     print(decoder)
 
         decoder.to(dist_util.dev())
         decoder.train()

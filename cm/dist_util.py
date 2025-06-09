@@ -94,29 +94,29 @@ def setup_dist_without_MPI(device_id, port=0):
     os.environ["NCCL_SOCKET_NTHREADS"] = "16"
     #os.environ["NCCL_SOCKET_NTHREADS"] = "8"
 
-    world_size = os.environ["WORLD_SIZE"] = os.environ["OMPI_COMM_WORLD_SIZE"]
-    rank = os.environ['RANK'] = os.environ['OMPI_COMM_WORLD_RANK']
-    local_rank = os.environ['LOCAL_RANK'] = os.environ['OMPI_COMM_WORLD_LOCAL_RANK']
+    # world_size = os.environ["WORLD_SIZE"] = os.environ["OMPI_COMM_WORLD_SIZE"]
+    # rank = os.environ['RANK'] = os.environ['OMPI_COMM_WORLD_RANK']
+    # local_rank = os.environ['LOCAL_RANK'] = os.environ['OMPI_COMM_WORLD_LOCAL_RANK']
 
-    os.environ['MASTER_ADDR'] = os.environ['HOSTNAME']
-    #os.environ['MASTER_ADDR'] = 'a0051.abci.local' # '127.0.0.1'
-    print("!!: ", world_size, rank, local_rank, backend)
-    world_size = int(world_size)
-    rank = int(rank)
-    local_rank = int(local_rank)
+    # os.environ['MASTER_ADDR'] = 'a0051.abci.local' # '127.0.0.1'
+    # print("!!: ", world_size, rank, local_rank, backend)
+    # world_size = int(world_size)
+    # rank = int(rank)
+    # local_rank = int(local_rank)
 
     if backend == "gloo":
         hostname = "localhost"
     else:
         hostname = socket.gethostbyname(socket.getfqdn())
+    os.environ['MASTER_ADDR'] = hostname
     hostname = [hostname]
     port = str(65535 - port)
-    os.environ["MASTER_PORT"] = str(int(port) + int(rank) + int(local_rank))  # str(port[0])
-    print("hostname, port, rank: ", hostname, port, rank)
-    dist.init_process_group(backend='nccl', world_size=world_size, rank=rank)
-    print("!!!!")
-    assert dist.get_rank() == rank
-    _device = th.device("cuda", local_rank) if th.cuda.is_available() else th.device("cpu")
+    os.environ["MASTER_PORT"] = str(int(port) + 0 + 0)  # str(port[0])
+    # print("hostname, port, rank: ", hostname, port, rank)
+    dist.init_process_group(backend='nccl', world_size=1, rank=0)
+    # print("!!!!")
+    assert dist.get_rank() == 0
+    _device = th.device("cuda", 0) if th.cuda.is_available() else th.device("cpu")
     th.cuda.set_device(_device)
 
 def setup_dist_guided_diffusion():

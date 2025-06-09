@@ -50,12 +50,9 @@ def main():
         dist_util.setup_dist_without_MPI(args.device_id)
 
     logger.configure(args, dir=args.out_dir)
+    logger.log("Creating model and diffusion...")
 
-    logger.log("creating model and diffusion...")
-
-
-    type_ = 'ode'
-    model, diffusion = create_model_and_diffusion(args, type_=type_)
+    model, diffusion = create_model_and_diffusion(args, type_='ode')
 
     if 'pkl' in args.model_path:
         import pickle
@@ -73,11 +70,14 @@ def main():
         )
 
     model.to(dist_util.dev())
+
+    # use half-precision float
     if args.use_fp16:
         model.convert_to_fp16()
     model.eval()
 
-    logger.log("creating data loader...")
+    logger.log("Creating data loader...")
+
     if args.batch_size == -1:
         batch_size = args.global_batch_size // dist.get_world_size()
         if args.global_batch_size % dist.get_world_size() != 0:
@@ -105,7 +105,9 @@ def main():
         random_crop=False,
         flip_ratio=args.flip_ratio,
     )
-    logger.log("sampling...")
+
+    logger.log("Starting sampling")
+    
     if args.sampler == "multistep":
         assert len(args.ts) > 0
         ts = tuple(int(x) for x in args.ts.split(","))
@@ -142,10 +144,14 @@ def main():
     else:
         out_dir = os.path.join(args.out_dir,
                                 f'{args.training_mode}_{args.sampler}_sampler_{args.sampling_steps}_steps_{step}_itrs_{ema}_ema_{args.rho}_rho')
+    
     os.makedirs(out_dir, exist_ok=True)
+    
     itr = 0
     eval_num_samples = 0
-    num_sample = args.init_num_sample
+     
+    num_sample = args.init_num_sample # not used
+    
     while itr < args.eval_num_samples:
         if args.reverse:
             assert args.stochastic_seed == False
@@ -183,11 +189,15 @@ def main():
                 classes = th.tensor([x for x in classes for _ in range(args.batch_size // len(classes))], device=dist_util.dev())
             else:
                 classes = th.randint(
-                    low=0, high=args.num_classes, size=(args.batch_size,), device=dist_util.dev()
+                    low=args.class_start, high=args.class_end, size=(args.batch_size,), device=dist_util.dev()
                 )
+                print(">> Random batch generated:")
+                print(classes)
+                unique_classes, counts = classes.unique(return_counts=True)
+                count_dict = {unique_classes[i].item(): counts[i].item() for i in range(len(unique_classes))}
+                print(count_dict)
             model_kwargs["y"] = classes
-            if args.large_log:
-                print("classes: ", model_kwargs)
+            print("classes: ", model_kwargs)
             #if args.reverse:
             model_kwargs["y"] = cond['y'].to(dist_util.dev())
             #else:
@@ -235,8 +245,7 @@ def main():
             sample = sample.cpu().detach()
             x_T = x_T.cpu().detach()
 
-            if args.large_log:
-                print(f"{(itr-1) * args.batch_size} sampling complete...")
+            print(f"{(itr-1) * args.batch_size} sampling complete...")
             print(x_T.shape, sample.shape)
             sample = sample.permute(0,2,3,1).numpy()
             print(sample.shape)
@@ -299,8 +308,7 @@ def main():
             #             save_image(image_grid, fout)
 
         eval_num_samples += sample.shape[0]
-        if args.large_log:
-            print(f"sample {eval_num_samples} time {time.time() - current} sec")
+        print(f"sample {eval_num_samples} time {time.time() - current} sec")
 
 
     # dist.barrier()

@@ -485,7 +485,7 @@ def sample_heun(
         indices = tqdm(indices)
 
     for i in indices:
-        print("sigmas: ", sigmas[i], sigmas[i+1], sigmas[i-1], ctm, teacher, (x ** 2).mean())
+        # print("sigmas: ", sigmas[i], sigmas[i+1], sigmas[i-1], ctm, teacher, (x ** 2).mean())
         gamma = (
             min(s_churn / (len(sigmas) - 1), 2**0.5 - 1)
             if s_tmin <= sigmas[i] <= s_tmax
@@ -586,7 +586,7 @@ def sample_heun_reverse(
         indices = tqdm(indices)
 
     for i in indices:
-        print("sigmas: ", sigmas[i], sigmas[i+1], sigmas[i-1], ctm, teacher, (x ** 2).mean())
+        # print("sigmas: ", sigmas[i], sigmas[i+1], sigmas[i-1], ctm, teacher, (x ** 2).mean())
         gamma = (
             min(s_churn / (len(sigmas) - 1), 2**0.5 - 1)
             if s_tmin <= sigmas[i] <= s_tmax
@@ -681,7 +681,7 @@ def sample_euler(
         indices = tqdm(indices)
 
     for i in indices:
-        print("sigmas: ", sigmas[i], (x ** 2).mean())
+        # print("sigmas: ", sigmas[i], (x ** 2).mean())
         sigma = sigmas[i]
         denoised = denoiser(x, sigma * s_in)
         d = to_d(x, sigma, denoised, diffusion=diffusion)

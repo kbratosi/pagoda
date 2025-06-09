@@ -3,3 +3,6 @@
 *.pyo
 out/*
 models/*
+archive/
+.vscode/
+nohup*

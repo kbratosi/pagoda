@@ -2,7 +2,7 @@ DEFAULT_FLAGS="
 --xz_type=npz
 --map_location=cuda
 --use_MPI=True
---use_fp16=True
+--use_fp16=True         # use half-precision float
 --loss_norm=lpips
 --new=False
 --decoder_style=unet 
@@ -88,7 +88,7 @@ CKPT_FLAGS="
 --teacher_model_path STAGE2_PRETRAINED_DM_PATH 
 --data_dir ImageNet_DATA_DIR 
 --z_no_flip_dir DATA_LATENT_PAIR_DIR 
---z_flip_dir FLIPED_DATA_LATENT_PAIR_DIR"
+--z_flip_dir FLIPED_DATA_LATENT_PAIR_DIR
 python image_sample.py 
 $DEFAULT_FLAGS 
 $DEFAULT_FLAGS 

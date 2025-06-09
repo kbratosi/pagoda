@@ -36,6 +36,8 @@ import glob
 import scipy
 import time
 
+import tensorflow.compat.v1 as tf
+
 # For ImageNet experiments, this was a good default value.
 # We found that the lg_loss_scale quickly climbed to
 # 20-21 within the first ~1K steps of training.
@@ -253,8 +255,9 @@ class TrainLoop:
                         classes = th.ones(size=(batch_size,), device=dist_util.dev(), dtype=int) * self.args.train_classes
                         model_kwargs["y"] = classes
                     elif self.args.train_classes == -2:
-                        classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387,
-                                   388, 417, 562, 614, 759, 789, 800, 812, 848, 933, 973, 980]
+                        # classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387,
+                        #           388, 417, 562, 614, 759, 789, 800, 812, 848, 933, 973, 980]
+                        classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387]
                         assert batch_size % len(classes) == 0
                         model_kwargs["y"] = th.tensor([x for x in classes for _ in range(batch_size // len(classes))], device=dist_util.dev())
                     else:
@@ -267,7 +270,7 @@ class TrainLoop:
                                 model_kwargs["y"] = th.randint(0, self.args.num_classes, size=(batch_size, ), device=dist_util.dev())
                         if not random_class:
                             model_kwargs["y"] = self.classes.to(dist_util.dev())
-                    print("sampling classes: ", model_kwargs["y"])
+                    # print("sampling classes: ", model_kwargs["y"])
                 if generator != None:
                     x_T = generator.randn(*(batch_size, self.args.in_channels, self.sampling_input_size, self.sampling_input_size),
                                 device=dist_util.dev()) * self.args.sigma_max
@@ -666,9 +669,9 @@ class CMTrainLoop(TrainLoop):
             or self.global_step < self.total_training_steps
         ):
             batch, cond = self.get_batch()
-            if self.args.large_log:
-                print("batch size: ", batch.shape)
-                print("rank: ", dist.get_rank())
+            # if self.args.large_log:
+            #     print("batch size: ", batch.shape)
+            #     print("rank: ", dist.get_rank())
             if self.args.intermediate_samples:
                 if self.step > self.initial_step + 1 and (self.step % self.args.sample_interval == 0):
                     self.sampling(model=self.ddp_decoder, sampler='onestep' if self.args.training_mode == 'pgd' else 'heun',
@@ -781,7 +784,6 @@ class CMTrainLoop(TrainLoop):
                     del self.evaluator.pool_features, self.evaluator.softmax
                     tf.reset_default_graph()
                     del self.evaluator, self.ref_acts, self.ref_stats, self.ref_stats_spatial
-                logger.log(f'Evaluation with {self.args.ode_ema_rate}-EMA ODE parameter end')
                 gc.collect()
                 th.cuda.empty_cache()
             dist.barrier()

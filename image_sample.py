@@ -50,6 +50,7 @@ def main():
     else:
         type_ = 'ode'
     model, diffusion = create_model_and_diffusion(args, type_=type_)
+    # model, diffusion = create_model_and_diffusion(args)
 
     if 'pkl' in args.model_path:
         import pickle
