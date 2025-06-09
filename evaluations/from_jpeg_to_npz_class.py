@@ -14,7 +14,7 @@ ext = 'JPEG'
 resolution = 32
 class_idx = 0
 
-def center_crop_arr(pil_image, image_size, data_name='cifar10'):
+def center_crop_arr(pil_image, image_size, data_name):
     # We are not on a new enough PIL to support the `reducing_gap`
     # argument, which uses BOX downsampling at powers of two first.
     # Thus, we do it by hand to improve downsample quality.

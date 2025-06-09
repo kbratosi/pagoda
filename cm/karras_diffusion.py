@@ -261,42 +261,31 @@ class KarrasDenoiser:
         all_sample = th.from_numpy(np.concatenate(all_sample, axis=0)).to(device)
         return all_sample
 
-    def get_last_layer(self, model, dataset='cifar10'):
-        if dataset == 'cifar10':
-            return model.module.model.dec[f'32x32_block{self.args.decoder_num_blocks}'].conv1.weight
+    def get_last_layer(self, model, dataset):
+        if self.args.decoder_style == 'unet':
+            return model.module.output_blocks[self.last_layer_idx][0].out_layers[3].weight
+        elif self.args.decoder_style == 'stylegan':
+            return getattr(model.module.synthesis, self.last_layer_idx).affine.weight
         else:
-            if self.args.decoder_style == 'unet':
-                return model.module.output_blocks[self.last_layer_idx][0].out_layers[3].weight
-            elif self.args.decoder_style == 'stylegan':
-                return getattr(model.module.synthesis, self.last_layer_idx).affine.weight
-            else:
-                raise NotImplementedError
+            raise NotImplementedError
 
     def get_adaptive_weight(self, model, loss1, loss2, adaptive, loss1_grad_norm, type_):
         if adaptive:
             if loss1.sum():
-                if self.args.data_name.lower() == 'cifar10':
-                    if type_ == 'decoder':
-                        if self.args.decoder_style == 'stylegan':
-                            raise NotImplementedError
+                if self.args.decoder_style == 'unet':
+                    if loss1_grad_norm:
                         adaptive_weight = self.calculate_adaptive_weight(loss1.mean(),
-                                                                  loss2.mean(),
-                                                                  last_layer=self.get_last_layer(model, self.args.data_name))
-                else:
-                    if self.args.decoder_style == 'unet':
-                        if loss1_grad_norm:
-                            adaptive_weight = self.calculate_adaptive_weight(loss1.mean(),
-                                                                             loss2.mean(),
-                                                                             last_layer=self.get_last_layer(model, self.args.data_name),
-                                                                             loss1_grad_norm=loss1_grad_norm)
-                        else:
-                            adaptive_weight = self.calculate_adaptive_weight(loss1.mean(),
-                                                                      loss2.mean(),
-                                                                      last_layer=self.get_last_layer(model, 'imagenet'))
+                                                                            loss2.mean(),
+                                                                            last_layer=self.get_last_layer(model, self.args.data_name),
+                                                                            loss1_grad_norm=loss1_grad_norm)
                     else:
                         adaptive_weight = self.calculate_adaptive_weight(loss1.mean(),
-                                                                         loss2.mean(),
-                                                                         last_layer=model.module.get_last_layer())
+                                                                    loss2.mean(),
+                                                                    last_layer=self.get_last_layer(model, 'imagenet'))
+                else:
+                    adaptive_weight = self.calculate_adaptive_weight(loss1.mean(),
+                                                                        loss2.mean(),
+                                                                        last_layer=model.module.get_last_layer())
                 adaptive_weight = th.clip(adaptive_weight, 0.01, 10.)
             else:
                 adaptive_weight = th.tensor(1., device=loss1.device)

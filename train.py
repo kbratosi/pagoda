@@ -320,7 +320,6 @@ def main():
     ).run_loop()
 
 def create_argparser():
-    #defaults = dict(data_name='cifar10')
     defaults = dict(data_name='imagenet64')
     #defaults = dict(data_name='afhq')
     defaults.update(train_defaults(defaults['data_name']))

@@ -105,8 +105,6 @@ class TrainLoop:
         print("self.x_T: ", (self.x_T ** 2).sum([1, 2, 3]).mean().item())
         if self.args.class_cond:
             self.classes = self.generator.randint(0, self.args.num_classes, (self.args.sampling_batch,), device=dist_util.dev())
-            if self.args.data_name.lower() == 'cifar10':
-                self.classes.sort()
 
         self.sync_cuda = th.cuda.is_available()
 
@@ -387,65 +385,32 @@ class TrainLoop:
             return psnr, ssim
 
     def calculate_inception_stats(self, data_name, image_path, num_samples=50000, batch_size=100, device=th.device('cuda')):
-        if data_name.lower() == 'cifar10':
-            print(f'Loading images from "{image_path}"...')
-            mu = th.zeros([self.feature_dim], dtype=th.float64, device=device)
-            sigma = th.zeros([self.feature_dim, self.feature_dim], dtype=th.float64, device=device)
-            files = glob.glob(os.path.join(image_path, 'sample*.npz'))
-            count = 0
-            for file in files:
-                images = np.load(file)['arr_0']  # [0]#["samples"]
-                for k in range((images.shape[0] - 1) // batch_size + 1):
-                    mic_img = images[k * batch_size: (k + 1) * batch_size]
-                    mic_img = th.tensor(mic_img).permute(0, 3, 1, 2).to(device)
-                    features = self.detector_net(mic_img, **self.detector_kwargs).to(th.float64)
-                    if count + mic_img.shape[0] > num_samples:
-                        remaining_num_samples = num_samples - count
-                    else:
-                        remaining_num_samples = mic_img.shape[0]
-                    mu += features[:remaining_num_samples].sum(0)
-                    sigma += features[:remaining_num_samples].T @ features[:remaining_num_samples]
-                    count = count + remaining_num_samples
-                    print(count)
-                    if count >= num_samples:
-                        break
-                if count >= num_samples:
-                    break
-            assert count == num_samples
-            print(count)
-            mu /= num_samples
-            sigma -= mu.ger(mu) * num_samples
-            sigma /= num_samples - 1
-            mu = mu.cpu().numpy()
-            sigma = sigma.cpu().numpy()
-            return mu, sigma
-        else:
-            filenames = glob.glob(os.path.join(image_path, '*.npz'))
-            imgs = []
-            for file in filenames:
+        filenames = glob.glob(os.path.join(image_path, '*.npz'))
+        imgs = []
+        for file in filenames:
+            try:
+                img = np.load(file)  # ['arr_0']
                 try:
-                    img = np.load(file)  # ['arr_0']
-                    try:
-                        img = img['data']
-                    except:
-                        img = img['arr_0']
-                    imgs.append(img)
+                    img = img['data']
                 except:
-                    pass
-            imgs = np.concatenate(imgs, axis=0)
-            os.makedirs(os.path.join(image_path, 'single_npz'), exist_ok=True)
-            np.savez(os.path.join(os.path.join(image_path, 'single_npz'), f'data'),
-                     imgs)  # , labels)
-            logger.log("computing sample batch activations...")
-            sample_acts = self.evaluator.read_activations(
-                os.path.join(os.path.join(image_path, 'single_npz'), f'data.npz'))
-            logger.log("computing/reading sample batch statistics...")
-            sample_stats, sample_stats_spatial = tuple(self.evaluator.compute_statistics(x) for x in sample_acts)
-            with open(os.path.join(os.path.join(image_path, 'single_npz'), f'stats'), 'wb') as f:
-                pickle.dump({'stats': sample_stats, 'stats_spatial': sample_stats_spatial}, f)
-            with open(os.path.join(os.path.join(image_path, 'single_npz'), f'acts'), 'wb') as f:
-                pickle.dump({'acts': sample_acts[0], 'acts_spatial': sample_acts[1]}, f)
-            return sample_acts, sample_stats, sample_stats_spatial
+                    img = img['arr_0']
+                imgs.append(img)
+            except:
+                pass
+        imgs = np.concatenate(imgs, axis=0)
+        os.makedirs(os.path.join(image_path, 'single_npz'), exist_ok=True)
+        np.savez(os.path.join(os.path.join(image_path, 'single_npz'), f'data'),
+                    imgs)  # , labels)
+        logger.log("computing sample batch activations...")
+        sample_acts = self.evaluator.read_activations(
+            os.path.join(os.path.join(image_path, 'single_npz'), f'data.npz'))
+        logger.log("computing/reading sample batch statistics...")
+        sample_stats, sample_stats_spatial = tuple(self.evaluator.compute_statistics(x) for x in sample_acts)
+        with open(os.path.join(os.path.join(image_path, 'single_npz'), f'stats'), 'wb') as f:
+            pickle.dump({'stats': sample_stats, 'stats_spatial': sample_stats_spatial}, f)
+        with open(os.path.join(os.path.join(image_path, 'single_npz'), f'acts'), 'wb') as f:
+            pickle.dump({'acts': sample_acts[0], 'acts_spatial': sample_acts[1]}, f)
+        return sample_acts, sample_stats, sample_stats_spatial
 
     def compute_fid(self, mu, sigma, ref_mu=None, ref_sigma=None):
         if np.array(ref_mu == None).sum():
@@ -550,104 +515,69 @@ class CMTrainLoop(TrainLoop):
     ):
         super().__init__(**kwargs)
 
-        if self.args.data_name.lower() == 'cifar10':
-            if dist.get_rank() == 0:
-                print('Loading Inception-v3 model...')
-                detector_url = 'https://api.ngc.nvidia.com/v2/models/nvidia/research/stylegan3/versions/1/files/metrics/inception-2015-12-05.pkl'
-                self.detector_kwargs = dict(return_features=True)
-                self.feature_dim = 2048
-                with dnnlib.util.open_url(detector_url, verbose=(0 == 0)) as f:
-                    self.detector_net = pickle.load(f).to(dist_util.dev())
-                with dnnlib.util.open_url(self.args.ref_path) as f:
-                    ref = dict(np.load(f))
-                self.mu_ref = ref['mu']
-                self.sigma_ref = ref['sigma']
-                if self.args.check_dm_performance:
-                    if self.args.ae_image_path_seed_42 != '':
-                        self.ae_mu, self.ae_sigma = self.calculate_inception_stats(self.args.data_name,
-                                                                                   self.args.ae_image_path_seed_42,
-                                                                                   num_samples=self.args.eval_num_samples)
-                    self.dm_mu, self.dm_sigma = self.calculate_inception_stats(self.args.data_name,
-                                                                               self.args.dm_sample_path_seed_42,
-                                                                               num_samples=self.args.eval_num_samples)
-                    logger.log(f"DM FID-50k: {self.compute_fid(self.dm_mu, self.dm_sigma)}")
-                    ref_files = glob.glob(os.path.join(self.args.dm_sample_path_seed_42, 'sample*.npz'))
-                    ref_files.sort()
-                    self.ref_images = []
-                    for i, ref_file in enumerate(ref_files):
-                        ref_images = np.load(ref_file)['arr_0']
-                        self.ref_images.append(ref_images)
-                    self.ref_images = np.concatenate(self.ref_images)
-                    if self.args.ae_image_path_seed_42 != '':
-                        logger.log(f"Regenerated DM Samples (by LSGM AE) FID-50k: {self.compute_fid(self.ae_mu, self.ae_sigma)}")
-                        psnr, ssim = self.calculate_similarity_metrics(
-                            self.args.ae_image_path_seed_42, num_samples=self.args.eval_num_samples, step=1,
-                            rate=0.0, sampler='LSGM Auto-Encoder', log=False)
-                        logger.log(f"Regenerated DM Samples (by LSGM AE) PSNR-50k: {psnr}, SSIM-10k: {ssim}")
+        if self.args.decoder_style == 'unet':
+            for name, params in self.decoder.named_parameters():
+                if name.split('.')[0] == 'output_blocks':
+                    last_layer_idx = int(name.split('.')[1])
+        elif self.args.decoder_style == 'stylegan':
+            for name, params in self.decoder.named_parameters():
+                if name.split('.')[0] == 'synthesis' and name.split('.')[1] != 'input':
+                    if int(name.split('.')[1].split('_')[2]) != 3:
+                        last_layer_idx = name.split('.')[1]
+        elif self.args.decoder_style == 'ldm':
+            last_layer_idx = -1
         else:
-            if self.args.decoder_style == 'unet':
-                for name, params in self.decoder.named_parameters():
-                    if name.split('.')[0] == 'output_blocks':
-                        last_layer_idx = int(name.split('.')[1])
-            elif self.args.decoder_style == 'stylegan':
-                for name, params in self.decoder.named_parameters():
-                    if name.split('.')[0] == 'synthesis' and name.split('.')[1] != 'input':
-                        if int(name.split('.')[1].split('_')[2]) != 3:
-                            last_layer_idx = name.split('.')[1]
-            elif self.args.decoder_style == 'ldm':
-                last_layer_idx = -1
-            else:
-                raise NotImplementedError
-            self.diffusion.last_layer_idx = last_layer_idx
-            logger.log("decoder last layer index: ", last_layer_idx)
-            if self.args.eval_fid:
-                global tf
-                global Evaluator
-                import tensorflow.compat.v1 as tf
-                from cm.evaluator import Evaluator
-            if dist.get_rank() == 0:
-                # if self.args.eval_fid or self.args.eval_similarity:
-                #     #import tensorflow.compat.v1 as tf
-                #     #from cm.evaluator import Evaluator
-                #     config = tf.ConfigProto(
-                #         allow_soft_placement=True  # allows DecodeJpeg to run on CPU in Inception graph
-                #     )
-                #     config.gpu_options.allow_growth = True
-                #     config.gpu_options.per_process_gpu_memory_fraction = 0.1
-                #     self.evaluator = Evaluator(tf.Session(config=config), batch_size=100)
-                #     self.ref_acts = self.evaluator.read_activations(self.args.ref_path)
-                #     self.ref_stats, self.ref_stats_spatial = self.evaluator.read_statistics(self.args.ref_path, self.ref_acts)
-                #     del self.evaluator, self.ref_acts, self.ref_stats, self.ref_stats_spatial
-                if self.args.check_dm_performance:
-                    if os.path.exists(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'stats')):
-                        with open(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'acts'), 'rb') as f:
-                            sample_acts = pickle.load(f)
-                            sample_acts = (sample_acts['acts'], sample_acts['acts_spatial'])
-                        with open(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'stats'), 'rb') as f:
-                            sample_stats = pickle.load(f)
-                            sample_stats, sample_stats_spatial = (sample_stats['stats'], sample_stats['stats_spatial'])
-                    else:
-                        sample_acts, sample_stats, sample_stats_spatial = self.calculate_inception_stats(self.args.data_name,
-                                                                        self.args.dm_sample_path_seed_42,
-                                                                        num_samples=self.args.eval_num_samples)
-                    logger.log("Inception Score-50k:", self.evaluator.compute_inception_score(sample_acts[0]))
-                    logger.log("FID-50k:", sample_stats.frechet_distance(self.ref_stats))
-                    logger.log("sFID-50k:", sample_stats_spatial.frechet_distance(self.ref_stats_spatial))
-                    prec, recall = self.evaluator.compute_prec_recall(self.ref_acts[0], sample_acts[0])
-                    logger.log("Precision:", prec)
-                    logger.log("Recall:", recall)
-                    if self.args.gpu_usage:
-                        self.print_gpu_usage('After computing DM FIDs')
-                    #self.evaluator.sess.close()
-                    if self.args.eval_fid:
-                        tf.reset_default_graph()
-            gc.collect()
-            th.cuda.empty_cache()
-            if self.args.eval_fid:
-                tf.disable_eager_execution()
+            raise NotImplementedError
+        self.diffusion.last_layer_idx = last_layer_idx
+        logger.log("decoder last layer index: ", last_layer_idx)
+        if self.args.eval_fid:
+            global tf
+            global Evaluator
+            import tensorflow.compat.v1 as tf
+            from cm.evaluator import Evaluator
+        if dist.get_rank() == 0:
+            # if self.args.eval_fid or self.args.eval_similarity:
+            #     #import tensorflow.compat.v1 as tf
+            #     #from cm.evaluator import Evaluator
+            #     config = tf.ConfigProto(
+            #         allow_soft_placement=True  # allows DecodeJpeg to run on CPU in Inception graph
+            #     )
+            #     config.gpu_options.allow_growth = True
+            #     config.gpu_options.per_process_gpu_memory_fraction = 0.1
+            #     self.evaluator = Evaluator(tf.Session(config=config), batch_size=100)
+            #     self.ref_acts = self.evaluator.read_activations(self.args.ref_path)
+            #     self.ref_stats, self.ref_stats_spatial = self.evaluator.read_statistics(self.args.ref_path, self.ref_acts)
+            #     del self.evaluator, self.ref_acts, self.ref_stats, self.ref_stats_spatial
+            if self.args.check_dm_performance:
+                if os.path.exists(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'stats')):
+                    with open(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'acts'), 'rb') as f:
+                        sample_acts = pickle.load(f)
+                        sample_acts = (sample_acts['acts'], sample_acts['acts_spatial'])
+                    with open(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'stats'), 'rb') as f:
+                        sample_stats = pickle.load(f)
+                        sample_stats, sample_stats_spatial = (sample_stats['stats'], sample_stats['stats_spatial'])
+                else:
+                    sample_acts, sample_stats, sample_stats_spatial = self.calculate_inception_stats(self.args.data_name,
+                                                                    self.args.dm_sample_path_seed_42,
+                                                                    num_samples=self.args.eval_num_samples)
+                logger.log("Inception Score-50k:", self.evaluator.compute_inception_score(sample_acts[0]))
+                logger.log("FID-50k:", sample_stats.frechet_distance(self.ref_stats))
+                logger.log("sFID-50k:", sample_stats_spatial.frechet_distance(self.ref_stats_spatial))
+                prec, recall = self.evaluator.compute_prec_recall(self.ref_acts[0], sample_acts[0])
+                logger.log("Precision:", prec)
+                logger.log("Recall:", recall)
+                if self.args.gpu_usage:
+                    self.print_gpu_usage('After computing DM FIDs')
+                #self.evaluator.sess.close()
+                if self.args.eval_fid:
+                    tf.reset_default_graph()
+        gc.collect()
+        th.cuda.empty_cache()
+        if self.args.eval_fid:
+            tf.disable_eager_execution()
 
-            if self.args.gpu_usage:
-                self.print_gpu_usage('After emptying cache')
+        if self.args.gpu_usage:
+            self.print_gpu_usage('After emptying cache')
 
 
     def get_batch(self):
@@ -979,33 +909,20 @@ class CMTrainLoop(TrainLoop):
         gc.collect()
         th.cuda.empty_cache()
         if dist.get_rank() == 0:
-            if self.args.data_name.lower() == 'cifar10':
-                mu, sigma = self.calculate_inception_stats(self.args.data_name,
-                                                           os.path.join(get_blob_logdir(), sample_dir),
-                                                           num_samples=self.args.eval_num_samples)
-                logger.log(f"{self.step}-th step {sampler} sampler (NFE {step}) EMA {rate}"
-                           f" FID-{self.args.eval_num_samples // 1000}k: {self.compute_fid(mu, sigma)}")
-                if delete:
-                    shutil.rmtree(os.path.join(get_blob_logdir(), sample_dir))
-                if out:
-                    return self.compute_fid(mu, sigma)
-            else:
-                sample_acts, sample_stats, sample_stats_spatial = self.calculate_inception_stats(self.args.data_name,
-                                                                             bf.join(get_blob_logdir(), sample_dir),
-                                                                             num_samples=self.args.eval_num_samples)
-                logger.log(f"Inception Score-{self.args.eval_num_samples // 1000}k:", self.evaluator.compute_inception_score(sample_acts[0]))
-                logger.log(f"FID-{self.args.eval_num_samples // 1000}k:", sample_stats.frechet_distance(self.ref_stats))
-                logger.log(f"sFID-{self.args.eval_num_samples // 1000}k:", sample_stats_spatial.frechet_distance(self.ref_stats_spatial))
-                prec, recall = self.evaluator.compute_prec_recall(self.ref_acts[0], sample_acts[0])
-                logger.log("Precision:", prec)
-                logger.log("Recall:", recall)
-                del sample_acts, sample_stats, sample_stats_spatial
-                if delete:
-                    shutil.rmtree(os.path.join(get_blob_logdir(), sample_dir))
-                #self.evaluator.sess.close()
-                #tf.reset_default_graph()
-
-
+            sample_acts, sample_stats, sample_stats_spatial = self.calculate_inception_stats(self.args.data_name,
+                                                                            bf.join(get_blob_logdir(), sample_dir),
+                                                                            num_samples=self.args.eval_num_samples)
+            logger.log(f"Inception Score-{self.args.eval_num_samples // 1000}k:", self.evaluator.compute_inception_score(sample_acts[0]))
+            logger.log(f"FID-{self.args.eval_num_samples // 1000}k:", sample_stats.frechet_distance(self.ref_stats))
+            logger.log(f"sFID-{self.args.eval_num_samples // 1000}k:", sample_stats_spatial.frechet_distance(self.ref_stats_spatial))
+            prec, recall = self.evaluator.compute_prec_recall(self.ref_acts[0], sample_acts[0])
+            logger.log("Precision:", prec)
+            logger.log("Recall:", recall)
+            del sample_acts, sample_stats, sample_stats_spatial
+            if delete:
+                shutil.rmtree(os.path.join(get_blob_logdir(), sample_dir))
+            #self.evaluator.sess.close()
+            #tf.reset_default_graph()
 
     def log_step(self):
         step = self.global_step

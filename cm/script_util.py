@@ -70,7 +70,7 @@ def ctm_loss_defaults(data_name):
         blur_init_sigma=2,
         prob_aug=1.0,
         gan_different_augment=False,
-        gan_num_heun_step=17 if data_name == 'cifar10' else 39,
+        gan_num_heun_step=39,
         gan_heun_step_strategy='uniform',
         gan_specific_time=False,
         gan_low_res_train=False,
@@ -85,7 +85,7 @@ def ctm_loss_defaults(data_name):
         encoder_style='ldm',
         reconstruction_weight=0.5,
         kl_regularization_weight=0.1,
-        encoder_ema_rate=0.999 if data_name == 'cifar10' else "0.999,0.9999,0.9999432189950708",
+        encoder_ema_rate="0.999,0.9999,0.9999432189950708",
         std=0.0,
         encoder_discriminator_training=False,
         encoder_discriminator_initiate_itr=0,
@@ -102,7 +102,7 @@ def ctm_loss_defaults(data_name):
         decoder_scale='karras',
         decoder_discriminator_training=False,
         decoder_discriminator_initiate_itr=0,
-        ema_rate="0.999,0.9999" if data_name == 'cifar10' else "0.999,0.9999,0.9999432189950708",
+        ema_rate="0.999,0.9999,0.9999432189950708",
         decoder_deactivate_alpha=True,
         decoder_distill_frequency=1,
         decoder_model_channels=128,
@@ -119,7 +119,7 @@ def ctm_loss_defaults(data_name):
 
         ode_alpha=0.5,
         ode_scale='karras',
-        ode_ema_rate=0.9999 if data_name == 'cifar10' else "0.999,0.9999,0.9999432189950708",
+        ode_ema_rate="0.999,0.9999,0.9999432189950708",
         eval_ode_interval=10000,
         alpha_discrete=False,
         use_encoder_ema_for_ode_train=True,
@@ -178,12 +178,12 @@ def ctm_train_defaults(data_name):
         beta_min=0.1,
         beta_max=20.,
         multiplier=1.,
-        num_heun_step=17 if data_name == 'cifar10' else 39,
+        num_heun_step=39,
         num_heun_step_random=True,
 
         # Network architecture
         edm_nn_ncsn=False,
-        edm_nn_ddpm=True if data_name == 'cifar10' else False,
+        edm_nn_ddpm=False,
         in_channels=3,
         linear_probing=False,
         target_subtract=False,
@@ -193,19 +193,15 @@ def ctm_eval_defaults(data_name):
     return dict(
         intermediate_samples=False,
         sampling_batch=64,
-        sample_interval=1000 if data_name == 'cifar10' else 1000,
-        sampling_steps=18 if data_name == 'cifar10' else 40,
+        sample_interval=1000,
+        sampling_steps=40,
         eval_interval=1000,
         eval_num_samples=50000,
         eval_batch=500,
-        #ref_path='/home/dongjun/EighthArticleExperimentalResults/CIFAR10/author_ckpt/cifar10-32x32.npz' if data_name == 'cifar10' else "",
-        ref_path='/home/acf15618av/EighthArticleExperimentalResults/CIFAR10/author_ckpt/cifar10-32x32.npz' if data_name == 'cifar10' \
-            else "/home/fp084243/EighthArticleExperimentalResults/ImageNet64/author_ckpt/VIRTUAL_imagenet64_labeled.npz",
+        ref_path="",
         ref_feat_path='',
         large_log=False,
         compute_ema_fids=True,
-        #dm_sample_path_seed_42='/data2/dongjun/EighthArticleExperimentalResults/CIFAR10/DM/EDM-VP/fp16-seed-42/edm_heun_sampler_18_steps_ond-vp_itrs_model_ema' if data_name == 'cifar10' else "",
-        dm_sample_path_seed_42='/home/acf15618av/EighthArticleExperimentalResults/CIFAR10/DM/heun_18_seed_42_ver2' if data_name == 'cifar10' else "",
         ae_image_path_seed_42='',
         eval_seed=42,
         eval_fid=True,
@@ -214,7 +210,7 @@ def ctm_eval_defaults(data_name):
         check_ctm_denoising_ability=False,
         check_dm_performance=True,
         sanity_check=False,
-        save_period=1000 if data_name == 'cifar10' else 1000,
+        save_period=1000,
         clip_denoised=False,
         clip_output=True,
         gpu_usage=False,
@@ -223,16 +219,15 @@ def ctm_eval_defaults(data_name):
 
 def cm_train_defaults(data_name):
     return dict(
-        #teacher_model_path="/home/dongjun/EighthArticleExperimentalResults/CIFAR10/author_ckpt/edm-cifar10-32x32-uncond-vp.pkl" if data_name == 'cifar10' else "",
-        teacher_model_path="" if data_name == 'cifar10' else "",
-        teacher_dropout=0.0 if data_name == 'cifar10' else 0.1,
+        teacher_model_path="",
+        teacher_dropout=0.1,
         training_mode="ctm",
         target_ema_mode="fixed",
         scale_mode="fixed",
         total_training_steps=600000,
         start_ema=0.999,
-        start_scales=18 if data_name == 'cifar10' else 40,
-        end_scales=18 if data_name == 'cifar10' else 40,
+        start_scales=40,
+        end_scales=40,
         distill_steps_per_iter=50000,
         loss_norm="lpips",
         port=6,
@@ -246,7 +241,7 @@ def model_and_diffusion_defaults(data_name):
         sigma_min=0.002,
         sigma_max=80.0,
         rho=7,
-        image_size=32 if data_name == 'cifar10' else 64,
+        image_size=64,
         num_channels=192,
         num_res_blocks=3,
         num_heads=4,
@@ -258,7 +253,7 @@ def model_and_diffusion_defaults(data_name):
         decoder_channel_mult_="",
         input_size=64,
         dropout=0.0,
-        class_cond=False if data_name == 'cifar10' else True,
+        class_cond=True,
         use_checkpoint=False,
         use_scale_shift_norm=True,
         resblock_updown=True,
@@ -277,18 +272,17 @@ def train_defaults(data_name):
     """
     res = dict(
         out_dir="",
-        #data_dir="/home/dongjun/EighthArticleExperimentalResults/CIFAR10/train" if data_name == 'cifar10' else "",
-        data_dir="/home/acf15618av/dataset/CIFAR10/train" if data_name == 'cifar10' else "",
+        data_dir="",
         schedule_sampler="uniform_decoder",
-        lr_dec=0.0004 if data_name == 'cifar10' else 0.000008,
-        lr_enc=0.0004 if data_name == 'cifar10' else 0.000008,
-        lr_ode=0.001 if data_name == 'cifar10' else 0.0001,
+        lr_dec=0.000008,
+        lr_enc=0.000008,
+        lr_ode=0.0001,
         lr_disc=0.002,
         weight_decay=0.0,
         lr_anneal_steps=0,
-        global_batch_size=128 if data_name == 'cifar10' else 2048,
+        global_batch_size=2048,
         batch_size=-1,
-        microbatch=64 if data_name.lower() == 'cifar10' else -1,  # -1 disables microbatches
+        microbatch=-1,  # -1 disables microbatches
         # comma-separated list of EMA values
         log_interval=1000,
         save_interval=1000000,
@@ -319,132 +313,87 @@ def create_model_and_diffusion(args, feature_extractor=None, discriminator_featu
     schedule_sampler = create_named_schedule_sampler(args, args.schedule_sampler, args.start_scales)
     diffusion_schedule_sampler = create_named_schedule_sampler(args, args.diffusion_schedule_sampler, args.start_scales)
 
-    if args.data_name.lower() == 'cifar10':
-
-        if type_ == 'ode':
-            from cm.networks import EDMPrecond_CTM
-            model = EDMPrecond_CTM(args, img_resolution=args.image_size, img_channels=3,
-                                   label_dim=1000 if args.data_name.lower() == 'imagenet64' else 10 if args.class_cond else 0,
-                                   use_fp16=args.use_fp16,
-                                   sigma_min=args.sigma_min, sigma_max=args.sigma_max,
-                                   sigma_data=args.sigma_data,
-                                   model_type='SongUNet' if args.data_name.lower() == 'cifar10' else 'DhariwalUNet',
-                                   teacher=teacher, teacher_model_path=args.teacher_model_path,
-                                   training_mode=args.training_mode,
-                                   arch='ddpmpp' if args.data_name.lower() == 'cifar10' else 'adm',
-                                   linear_probing=args.linear_probing, encoder=(type_ == 'encoder'))
+    if args.decoder_style == 'unet':
+        if type_ == 'encoder':
+            model = create_model(
+                args,
+                input_size=32,
+                output_size=32,
+                num_channels_high=-1,
+                use_scale_shift_norm_high=-1,
+                num_res_blocks_high=-1,
+                encoder_channel_mult="",
+                decoder_channel_mult="",
+                num_channels=256,
+                num_res_blocks=3,
+                learn_sigma=False,
+                class_cond=args.class_cond,
+                use_checkpoint=args.use_checkpoint,
+                attention_resolutions="16,8",
+                num_heads=args.num_heads,
+                num_head_channels=args.num_head_channels,
+                num_heads_upsample=args.num_heads_upsample,
+                use_scale_shift_norm=args.use_scale_shift_norm,
+                dropout=args.dropout,
+                resblock_updown=args.resblock_updown,
+                use_fp16=args.use_fp16,
+                use_new_attention_order=args.use_new_attention_order,
+                training_mode=('teacher' if teacher else args.training_mode),
+                type_=type_,
+                new_arch=args.new_arch,
+                attention_type=args.attention_type,
+                # new_arch='ode' if type_ == 'ode' else args.new_arch,
+            )
         else:
-            if args.decoder_style == 'ldm':
-                from cm.ldm_encoder import Decoder
-                model = Decoder(ch=args.decoder_ch, out_ch=3, num_res_blocks=args.decoder_num_res_blocks, ch_mult=args.decoder_ch_mult,
-                                attn_resolutions=[], dropout=0.0, resamp_with_conv=True, in_channels=3,
-                                resolution=args.decoder_resolution, z_channels=3, double_z=True, use_linear_attn=False,
-                                attn_type="vanilla", )
-            elif args.decoder_style == 'stylegan':
-                from cm.networks_stylegan3_resetting import Generator
-                model = Generator(z_dim=int(args.image_size * args.image_size * 3),
-                                  z_mid_dim=64,
-                                  c_dim=64 if args.class_cond else 0,
-                                  w_dim=512,
-                                  img_resolution=args.image_size,
-                                  img_channels=3,
-                                  )
-            else:
-                from cm.networks import EDMPrecond_CTM
-                model = EDMPrecond_CTM(args, img_resolution=args.image_size, img_channels=3,
-                                       label_dim=1000 if args.data_name.lower() == 'imagenet64' else 10 if args.class_cond else 0,
-                                       use_fp16=args.use_fp16,
-                                       sigma_min=args.sigma_min, sigma_max=args.sigma_max,
-                                       sigma_data=args.sigma_data,
-                                       model_type='SongUNet' if args.data_name.lower() == 'cifar10' else 'DhariwalUNet',
-                                       teacher=teacher, teacher_model_path=args.teacher_model_path or args.model_path,
-                                       training_mode=args.training_mode,
-                                       arch='ddpmpp' if args.data_name.lower() == 'cifar10' else 'adm',
-                                       linear_probing=args.linear_probing, encoder=(type_ == 'encoder'),
-                                       model_channels=args.decoder_model_channels, channel_mult=list(int(ch_mult) for ch_mult in args.decoder_channel_mult.split(",")),
-                                       num_blocks=args.decoder_num_blocks)
+            model = create_model(
+                args,
+                input_size=args.pretrained_input_size if type_ == 'ode' or args.upsample_to_64 else args.input_size,
+                output_size=args.pretrained_output_size if type_ == 'ode' else args.image_size,
+                num_channels_high=args.num_channels_high,
+                use_scale_shift_norm_high=args.use_scale_shift_norm_high,
+                num_res_blocks_high=args.num_res_blocks_high,
+                encoder_channel_mult=args.encoder_channel_mult,
+                decoder_channel_mult=args.decoder_channel_mult_,
+                num_channels=args.num_channels,
+                num_res_blocks=args.num_res_blocks,
+                learn_sigma=False,
+                class_cond=args.class_cond,
+                use_checkpoint=args.use_checkpoint,
+                attention_resolutions=args.attention_resolutions,
+                num_heads=args.num_heads,
+                num_head_channels=args.num_head_channels,
+                num_heads_upsample=args.num_heads_upsample,
+                use_scale_shift_norm=args.use_scale_shift_norm,
+                dropout=args.dropout,
+                resblock_updown=args.resblock_updown,
+                use_fp16=args.use_fp16,
+                use_new_attention_order=args.use_new_attention_order,
+                training_mode=('teacher' if teacher else args.training_mode),
+                type_=type_,
+                new_arch=args.new_arch,
+                attention_type=args.attention_type,
+                #new_arch='ode' if type_ == 'ode' else args.new_arch,
+            )
+    elif args.decoder_style == 'stylegan':
+        from cm.networks_stylegan3_resetting import Generator, SuperresGenerator
+        model = Generator(z_dim=int(args.image_size * args.image_size * 3),
+                            z_mid_dim=64,
+                            c_dim=64 if args.class_cond else 0,
+                            w_dim=512,
+                            num_init_layers=args.num_init_layers,
+                            img_resolution=args.image_size,
+                            img_channels=3,
+                            #up_factor=args.image_size//16
+                            )
+    elif args.decoder_style == 'ldm':
+        from cm.sd_model import Decoder
+        decoder_ch_mult = tuple(int(ch_mult) for ch_mult in args.decoder_ch_mult.split(","))
+        model = Decoder(ch=args.decoder_ch, out_ch=3, num_res_blocks=args.decoder_num_res_blocks,
+                        ch_mult=decoder_ch_mult,
+                        attn_resolutions=[], dropout=args.dropout, resamp_with_conv=True, in_channels=3,
+                        resolution=args.image_size, num_classes=(args.num_classes if args.class_cond else None))
     else:
-        if args.decoder_style == 'unet':
-            if type_ == 'encoder':
-                model = create_model(
-                    args,
-                    input_size=32,
-                    output_size=32,
-                    num_channels_high=-1,
-                    use_scale_shift_norm_high=-1,
-                    num_res_blocks_high=-1,
-                    encoder_channel_mult="",
-                    decoder_channel_mult="",
-                    num_channels=256,
-                    num_res_blocks=3,
-                    learn_sigma=False,
-                    class_cond=args.class_cond,
-                    use_checkpoint=args.use_checkpoint,
-                    attention_resolutions="16,8",
-                    num_heads=args.num_heads,
-                    num_head_channels=args.num_head_channels,
-                    num_heads_upsample=args.num_heads_upsample,
-                    use_scale_shift_norm=args.use_scale_shift_norm,
-                    dropout=args.dropout,
-                    resblock_updown=args.resblock_updown,
-                    use_fp16=args.use_fp16,
-                    use_new_attention_order=args.use_new_attention_order,
-                    training_mode=('teacher' if teacher else args.training_mode),
-                    type_=type_,
-                    new_arch=args.new_arch,
-                    attention_type=args.attention_type,
-                    # new_arch='ode' if type_ == 'ode' else args.new_arch,
-                )
-            else:
-                model = create_model(
-                    args,
-                    input_size=args.pretrained_input_size if type_ == 'ode' or args.upsample_to_64 else args.input_size,
-                    output_size=args.pretrained_output_size if type_ == 'ode' else args.image_size,
-                    num_channels_high=args.num_channels_high,
-                    use_scale_shift_norm_high=args.use_scale_shift_norm_high,
-                    num_res_blocks_high=args.num_res_blocks_high,
-                    encoder_channel_mult=args.encoder_channel_mult,
-                    decoder_channel_mult=args.decoder_channel_mult_,
-                    num_channels=args.num_channels,
-                    num_res_blocks=args.num_res_blocks,
-                    learn_sigma=False,
-                    class_cond=args.class_cond,
-                    use_checkpoint=args.use_checkpoint,
-                    attention_resolutions=args.attention_resolutions,
-                    num_heads=args.num_heads,
-                    num_head_channels=args.num_head_channels,
-                    num_heads_upsample=args.num_heads_upsample,
-                    use_scale_shift_norm=args.use_scale_shift_norm,
-                    dropout=args.dropout,
-                    resblock_updown=args.resblock_updown,
-                    use_fp16=args.use_fp16,
-                    use_new_attention_order=args.use_new_attention_order,
-                    training_mode=('teacher' if teacher else args.training_mode),
-                    type_=type_,
-                    new_arch=args.new_arch,
-                    attention_type=args.attention_type,
-                    #new_arch='ode' if type_ == 'ode' else args.new_arch,
-                )
-        elif args.decoder_style == 'stylegan':
-            from cm.networks_stylegan3_resetting import Generator, SuperresGenerator
-            model = Generator(z_dim=int(args.image_size * args.image_size * 3),
-                              z_mid_dim=64,
-                              c_dim=64 if args.class_cond else 0,
-                              w_dim=512,
-                              num_init_layers=args.num_init_layers,
-                              img_resolution=args.image_size,
-                              img_channels=3,
-                              #up_factor=args.image_size//16
-                              )
-        elif args.decoder_style == 'ldm':
-            from cm.sd_model import Decoder
-            decoder_ch_mult = tuple(int(ch_mult) for ch_mult in args.decoder_ch_mult.split(","))
-            model = Decoder(ch=args.decoder_ch, out_ch=3, num_res_blocks=args.decoder_num_res_blocks,
-                            ch_mult=decoder_ch_mult,
-                            attn_resolutions=[], dropout=args.dropout, resamp_with_conv=True, in_channels=3,
-                            resolution=args.image_size, num_classes=(args.num_classes if args.class_cond else None))
-        else:
-            raise NotImplementedError
+        raise NotImplementedError
     diffusion = KarrasDenoiser(
         args=args, schedule_sampler=schedule_sampler,
         diffusion_schedule_sampler=diffusion_schedule_sampler,

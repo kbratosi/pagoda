@@ -15,7 +15,7 @@ def load_data(
     data_dir,
     batch_size,
     image_size,
-    data_name='cifar10',
+    data_name,
     train_classes=None,
     class_cond=False,
     deterministic=False,
@@ -90,28 +90,25 @@ def load_data(
         if train_classes == 281:
             classes = [281 for _ in all_files]
         if train_classes not in [281, -2]:
-            if args.data_name.lower() == 'cifar10':
-                classes = [int(path.split('/')[-2]) for path in all_files]
+            if class_start != -1 and class_end != -1:
+                class_names = [bf.basename(path).split("_")[0] for path in all_files]
+                sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+                # classes = [sorted_classes[x] for x in class_names]
+                all_files_ = []
+                for cl in sorted(set(class_names))[class_start:class_end]:
+                    print("class: ", cl)
+                    data_dir_ = os.path.join(data_dir, cl)
+                    temp_files = _list_image_files_recursively(data_dir_, type=type, proportion=proportion)
+                    all_files_.extend(temp_files)
+                all_files = all_files_
+                class_names = [bf.basename(path).split("_")[0] for path in all_files]
+                # sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+                classes = [sorted_classes[x] for x in class_names]
+                print("classes: ", classes[:10])
             else:
-                if class_start != -1 and class_end != -1:
-                    class_names = [bf.basename(path).split("_")[0] for path in all_files]
-                    sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-                    # classes = [sorted_classes[x] for x in class_names]
-                    all_files_ = []
-                    for cl in sorted(set(class_names))[class_start:class_end]:
-                        print("class: ", cl)
-                        data_dir_ = os.path.join(data_dir, cl)
-                        temp_files = _list_image_files_recursively(data_dir_, type=type, proportion=proportion)
-                        all_files_.extend(temp_files)
-                    all_files = all_files_
-                    class_names = [bf.basename(path).split("_")[0] for path in all_files]
-                    # sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-                    classes = [sorted_classes[x] for x in class_names]
-                    print("classes: ", classes[:10])
-                else:
-                    class_names = [bf.basename(path).split("_")[0] for path in all_files]
-                    sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-                    classes = [sorted_classes[x] for x in class_names]
+                class_names = [bf.basename(path).split("_")[0] for path in all_files]
+                sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+                classes = [sorted_classes[x] for x in class_names]
 
     if num_data != -1:
         all_files = all_files[:num_data]
@@ -191,7 +188,7 @@ class ImageDataset(Dataset):
         num_shards=1,
         random_crop=False,
         random_flip=True,
-        data_name='cifar10',
+        data_name="",
         type='jpeg',
         flip_ratio=0.5,
         path_out=False,
@@ -283,34 +280,38 @@ class ImageDataset(Dataset):
             return np.transpose(arr, [2, 0, 1]), out_dict
 
 
-def center_crop_arr(pil_image, image_size, data_name='cifar10'):
+def center_crop_arr(pil_image, image_size):
     # We are not on a new enough PIL to support the `reducing_gap`
     # argument, which uses BOX downsampling at powers of two first.
     # Thus, we do it by hand to improve downsample quality.
-    if data_name in ['church']:
-        img = np.array(pil_image).astype(np.uint8)
-        crop = min(img.shape[0], img.shape[1])
-        h, w, = img.shape[0], img.shape[1]
-        img = img[(h - crop) // 2:(h + crop) // 2,
-              (w - crop) // 2:(w + crop) // 2]
+    
+    # ---FRAGMENT FOR A SPECIFIC DATASET---
+    # if data_name in ['church']:
+    #     img = np.array(pil_image).astype(np.uint8)
+    #     crop = min(img.shape[0], img.shape[1])
+    #     h, w, = img.shape[0], img.shape[1]
+    #     img = img[(h - crop) // 2:(h + crop) // 2,
+    #           (w - crop) // 2:(w + crop) // 2]
 
-        image = Image.fromarray(img)
-        if image_size is not None:
-            image = image.resize((image_size, image_size), resample='bicubic')
-        return image
-    else:
-        while min(*pil_image.size) >= 2 * image_size:
-            pil_image = pil_image.resize(
-                tuple(x // 2 for x in pil_image.size), resample=Image.BOX
-            )
-        scale = image_size / min(*pil_image.size)
+    #     image = Image.fromarray(img)
+    #     if image_size is not None:
+    #         image = image.resize((image_size, image_size), resample='bicubic')
+    #     return image
+    # else:
+    # ---
+    
+    while min(*pil_image.size) >= 2 * image_size:
         pil_image = pil_image.resize(
-            tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+            tuple(x // 2 for x in pil_image.size), resample=Image.BOX
         )
-        arr = np.array(pil_image)
-        crop_y = (arr.shape[0] - image_size) // 2
-        crop_x = (arr.shape[1] - image_size) // 2
-        return arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size]
+    scale = image_size / min(*pil_image.size)
+    pil_image = pil_image.resize(
+        tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+    )
+    arr = np.array(pil_image)
+    crop_y = (arr.shape[0] - image_size) // 2
+    crop_x = (arr.shape[1] - image_size) // 2
+    return arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size]
 
 
 def random_crop_arr(pil_image, image_size, min_crop_frac=0.8, max_crop_frac=1.0):
