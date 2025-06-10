@@ -329,7 +329,6 @@ def create_argparser():
         eval_seed=42,
         save_format='png',
         stochastic_seed=False,
-        #data_name='cifar10',
         data_name='imagenet64',
         #schedule_sampler="lognormal",
         ind_1=0,

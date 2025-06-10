@@ -103,7 +103,7 @@ def main():
     # Load Model
     logger.log(f"loading the teacher model from {args.teacher_model_path}")
     if args.decoder_override or args.load_ode:
-        ode, diffusion_ = create_model_and_diffusion(args, type_='ode')
+        ode, _ = create_model_and_diffusion(args, type_='ode')
     ### if model is a pickle
         if args.teacher_model_path.split('.')[-1] == 'pkl':
             if args.decoder_style == 'unet':
@@ -152,7 +152,7 @@ def main():
             for dst_name, dst in decoder.named_parameters():
                 print("decoder: ", dst_name, dst.shape)
 
-        if args.decoder_override:# and (args.decoder_model_channels == 128 and args.decoder_channel_mult == '2,2,2' and args.decoder_num_blocks == 4):
+        if args.decoder_override:
             if dist.get_rank() == 0:
                 for src_name, src in ode.named_parameters():
                     print("ode: ", src_name, src.shape)
@@ -183,10 +183,6 @@ def main():
                                         dst.data[:src.data.shape[0], :src.data.shape[1],
                                                 :src.data.shape[2], :src.data.shape[3]] = src.data
                                     break
-                        #import sys
-                        #sys.exit()
-                    #import sys
-                    #sys.exit()
                     if args.progressive:
                         for src_name, src in ode.named_parameters():
                             if src_name.split('.')[0] == 'output_blocks':
@@ -204,29 +200,7 @@ def main():
                             for dst_name, dst in decoder.named_parameters():
                                 if dst.requires_grad:
                                     print("requires_grad True: ", dst_name)
-                        #import sys
-                        #sys.exit()
-
-                if args.lowerres:
-                    for dst_name, dst in decoder.named_parameters():
-                        for src_name, src in ode.named_parameters():
-                            if 'input_blocks' in dst_name:
-                                dst_layer = int(dst_name.split('.')[1])
-                                diff = int((args.num_res_blocks + 1) * np.log2(args.image_size // args.input_size))
-                                diff = 4
-                                dst_name_ = dst_name
-                                if dst_layer > 0:
-                                    dst_name_ = dst_name.split('.')
-                                    dst_name_[1] = str(dst_layer + diff)
-                                    #print("before: ", dst_name, dst.data.shape, src_name, src.data.shape)
-                                    dst_name_ = '.'.join(dst_name_)
-                                    #print("after: " ,dst_name_)
-                                if dst_name_ == src_name and dst.data.shape == src.data.shape:
-                                    if dist.get_rank() == 0:
-                                        print(f"copied {src_name} source layer to {dst_name} target layer")
-                                    dst.data.copy_(src.data)
-                                    break
-                if not args.superres and not args.lowerres:
+                else:
                     decoder = copy.deepcopy(ode)
                     decoder.to(dist_util.dev())
                     decoder.train()
@@ -264,6 +238,7 @@ def main():
 
         def count_parameters(model, requires_grad=True):
             return sum(p.numel() for p in model.parameters() if p.requires_grad == requires_grad)
+        
         if args.decoder_override:
             logger.log("Teacher number of parameters: ", count_parameters(ode, False))
             logger.log("Teacher number of parameters: ", count_parameters(ode, True))
@@ -275,34 +250,9 @@ def main():
             if args.use_fp16:
                 ode.convert_to_fp16()
         else:
-            if args.load_encoder:
-                del ode
-                ode, diffusion_ = create_model_and_diffusion(args, type_='encoder')
-
-                if args.map_location == 'cuda':
-                    # state_dict = torch.load(args.teacher_model_path, map_location=dist_util.dev())  # "cpu")
-                    state_dict = torch.load(args.encoder_model_path, map_location="cpu")
-                else:
-                    state_dict = dist_util.load_state_dict(
-                        args.encoder_model_path, map_location='cpu',  # dist_util.dev()
-                    )
-                ode.load_state_dict(state_dict, strict=True)
-
-                ode.to(dist_util.dev())
-                ode.eval()
-                # ode.eval()
-                if args.use_fp16:
-                    ode.convert_to_fp16()
-                if dist.get_rank() == 0:
-                    for src_name, src in ode.named_parameters():
-                        print("encoder: ", src_name, src.shape)
-                print("ode load end")
-            else:
-                del ode
-                ode = None
+            del ode
+            ode = None
         logger.log("Decoder number of parameters: ", count_parameters(decoder))
-        # import sys
-        # sys.exit()
     else:
         decoder = None
 

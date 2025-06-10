@@ -581,6 +581,9 @@ class CMTrainLoop(TrainLoop):
 
 
     def get_batch(self):
+        '''
+        If args.training_mode is 'pgd', we alternate between the main data loader and the GAN data loader.
+        '''
         if self.args.training_mode == 'pgd':
             if self.step % 2 == 0:
                 batch, cond = next(self.data)
@@ -599,9 +602,6 @@ class CMTrainLoop(TrainLoop):
             or self.global_step < self.total_training_steps
         ):
             batch, cond = self.get_batch()
-            # if self.args.large_log:
-            #     print("batch size: ", batch.shape)
-            #     print("rank: ", dist.get_rank())
             if self.args.intermediate_samples:
                 if self.step > self.initial_step + 1 and (self.step % self.args.sample_interval == 0):
                     self.sampling(model=self.ddp_decoder, sampler='onestep' if self.args.training_mode == 'pgd' else 'heun',
@@ -619,6 +619,7 @@ class CMTrainLoop(TrainLoop):
                     self.decoder.load_state_dict(model_state_dict, strict=True)
                     del model_state_dict, state_dict
 
+            # If pretraining step is set, we load the decoder model at the pretraining step.
             if self.args.pretraining_step != -1 and self.global_step == self.args.pretraining_step:
                 del self.mp_decoder_trainer, self.opt_dec, self.ddp_decoder
                 self.args.resume_checkpoint = bf.join(get_blob_logdir(), f"decoder_{self.args.pretraining_step-1}")
@@ -626,8 +627,14 @@ class CMTrainLoop(TrainLoop):
                     self.load_model(self.decoder, 'decoder', self.args.lr_dec, self.args.use_fp16, self.ema_rate)
 
             self.run_step(batch, cond)
+
             if self.args.gpu_usage:
                 self.print_gpu_usage('Before training')
+            
+            # Evaluate DECODER under following conditions:
+            # * At regular intervals during training (eval_decoder_interval).
+            # * After pretraining is complete (pretraining_step).
+            # * At key milestones, such as the end of learning rate annealing (lr_anneal_steps) or the end of training (total_training_steps).
             if (
                 self.global_step
                 and self.args.eval_decoder_interval != -1
@@ -650,8 +657,8 @@ class CMTrainLoop(TrainLoop):
                     config.gpu_options.per_process_gpu_memory_fraction = 0.1
                     self.evaluator = Evaluator(tf.Session(config=config), batch_size=100)
                     self.ref_acts = self.evaluator.read_activations(self.args.ref_path)
-                    self.ref_stats, self.ref_stats_spatial = self.evaluator.read_statistics(self.args.ref_path,
-                                                                                            self.ref_acts)
+                    self.ref_stats, self.ref_stats_spatial = self.evaluator.read_statistics(self.args.ref_path, self.ref_acts)
+                
                 model_state_dict = copy.deepcopy(self.decoder.state_dict())
                 #self.evaluation(model=self.decoder, step=1, rate=0.0)
                 #logger.log('Evaluation with model parameter end')
@@ -666,6 +673,7 @@ class CMTrainLoop(TrainLoop):
                     del state_dict
                 self.decoder.load_state_dict(model_state_dict, strict=True)
                 del model_state_dict
+                
                 if dist.get_rank() == 0:
                     self.evaluator.sess.close()
                     del self.evaluator.sess, self.evaluator.manifold_estimator, self.evaluator.image_input, self.evaluator.softmax_input
@@ -675,11 +683,15 @@ class CMTrainLoop(TrainLoop):
                 gc.collect()
                 th.cuda.empty_cache()
             dist.barrier()
+            
+            # Evaluate ODE under following conditions:
+            # * At regular intervals during the pretraining phase (eval_ode_interval).
+            # * At the last step before pretraining ends (pretraining_step - 1).
             if (
-                    self.global_step != -1
-                    and self.global_step % self.args.eval_ode_interval == self.args.eval_ode_interval - 1
-                    and self.global_step < self.args.pretraining_step
-                    or self.global_step == self.args.pretraining_step - 1
+                self.global_step != -1
+                and self.global_step % self.args.eval_ode_interval == self.args.eval_ode_interval - 1
+                and self.global_step < self.args.pretraining_step
+                or self.global_step == self.args.pretraining_step - 1
             ):
                 if self.args.gpu_usage:
                     self.print_gpu_usage('Before emptying cache in evaluation 1')
@@ -694,6 +706,7 @@ class CMTrainLoop(TrainLoop):
                     self.evaluator = Evaluator(tf.Session(config=config), batch_size=50)
                     self.ref_acts = self.evaluator.read_activations(self.args.ref_path)
                     self.ref_stats, self.ref_stats_spatial = self.evaluator.read_statistics(self.args.ref_path, self.ref_acts)
+                
                 model_state_dict = copy.deepcopy(self.decoder.state_dict())
                 #self.evaluation(model=self.decoder, step=1, rate=0.0)
                 #logger.log('Evaluation with ODE parameter end')
@@ -708,6 +721,7 @@ class CMTrainLoop(TrainLoop):
                     del state_dict
                 self.decoder.load_state_dict(model_state_dict, strict=True)
                 del model_state_dict
+                
                 if dist.get_rank() == 0:
                     self.evaluator.sess.close()
                     del self.evaluator.sess, self.evaluator.manifold_estimator, self.evaluator.image_input, self.evaluator.softmax_input
@@ -718,6 +732,7 @@ class CMTrainLoop(TrainLoop):
                 th.cuda.empty_cache()
             dist.barrier()
 
+            # Save the model if args.save_interval is set and the global step is a multiple of it.
             saved = False
             if (
                 self.global_step
@@ -732,6 +747,8 @@ class CMTrainLoop(TrainLoop):
                 # Run for a finite amount of time in integration tests.
                 if os.environ.get("DIFFUSION_TRAINING_TEST", "") and self.step > 0:
                     return
+            
+            # save model if using args.pretraining_step
             if self.global_step == self.args.pretraining_step - 1:
                 self.save(only_model=True)
                 gc.collect()
@@ -739,6 +756,8 @@ class CMTrainLoop(TrainLoop):
                 # Run for a finite amount of time in integration tests.
                 if os.environ.get("DIFFUSION_TRAINING_TEST", "") and self.step > 0:
                     return
+            
+            # Log training statistics after args.log_interval steps.
             if self.global_step % self.args.log_interval == 0:
                 logger.dumpkvs()
                 logger.log(datetime.datetime.now().strftime("SONY-%Y-%m-%d-%H-%M-%S"))
@@ -746,6 +765,7 @@ class CMTrainLoop(TrainLoop):
         # Save the last checkpoint if it wasn't already saved.
         if not saved:
             self.save()
+
 
     def save_check(self, rate):
         if self.args.training_mode.lower() == 'ctm':
@@ -757,6 +777,7 @@ class CMTrainLoop(TrainLoop):
 
     def evaluation(self, model, step, rate):
         self.eval(model=model, step=step, sampler='onestep' if step == 1 else 'heun', rate=rate, ctm=False, delete=True)
+
 
     def run_step(self, batch, cond):
         #current = time.time()
@@ -780,6 +801,7 @@ class CMTrainLoop(TrainLoop):
         self.global_step += 1
         self.log_step()
 
+
     def loss_compute(self, ddp1, ddp2, compute_losses):
         losses = {}
         if ddp1 == None:
@@ -792,6 +814,7 @@ class CMTrainLoop(TrainLoop):
                     with ddp2.no_sync():
                         losses = compute_losses()
         return losses
+
 
     def forward_backward(self, batch, cond, mode='reconstruction'):
         self.mp_decoder_trainer.zero_grad()

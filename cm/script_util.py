@@ -149,7 +149,6 @@ def ctm_loss_defaults(data_name):
         z_no_flip_dir='',
         z_flip_dir='',
         superres=False,
-        lowerres=False,
         progressive=False,
         new=False,
         pretrained_input_size=64,
@@ -169,7 +168,6 @@ def ctm_loss_defaults(data_name):
         upsample_to_64=False,
         attention_type='flash',
         data_proportion=1.,
-        load_encoder=False,
         encoder_model_path="",
     )
 

@@ -18,30 +18,32 @@ def center_crop_arr(pil_image, image_size, data_name):
     # We are not on a new enough PIL to support the `reducing_gap`
     # argument, which uses BOX downsampling at powers of two first.
     # Thus, we do it by hand to improve downsample quality.
-    if data_name in ['church']:
-        img = np.array(pil_image).astype(np.uint8)
-        crop = min(img.shape[0], img.shape[1])
-        h, w, = img.shape[0], img.shape[1]
-        img = img[(h - crop) // 2:(h + crop) // 2,
-              (w - crop) // 2:(w + crop) // 2]
+    # ---FRAGMENT FOR A SPECIFIC DATASET---
+    # if data_name in ['church']:
+    #     img = np.array(pil_image).astype(np.uint8)
+    #     crop = min(img.shape[0], img.shape[1])
+    #     h, w, = img.shape[0], img.shape[1]
+    #     img = img[(h - crop) // 2:(h + crop) // 2,
+    #           (w - crop) // 2:(w + crop) // 2]
 
-        image = Image.fromarray(img)
-        if image_size is not None:
-            image = image.resize((image_size, image_size), resample='bicubic')
-        return image
-    else:
-        while min(*pil_image.size) >= 2 * image_size:
-            pil_image = pil_image.resize(
-                tuple(x // 2 for x in pil_image.size), resample=Image.BOX
-            )
-        scale = image_size / min(*pil_image.size)
+    #     image = Image.fromarray(img)
+    #     if image_size is not None:
+    #         image = image.resize((image_size, image_size), resample='bicubic')
+    #     return image
+    # else:
+    # ---
+    while min(*pil_image.size) >= 2 * image_size:
         pil_image = pil_image.resize(
-            tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+            tuple(x // 2 for x in pil_image.size), resample=Image.BOX
         )
-        arr = np.array(pil_image)
-        crop_y = (arr.shape[0] - image_size) // 2
-        crop_x = (arr.shape[1] - image_size) // 2
-        return arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size]
+    scale = image_size / min(*pil_image.size)
+    pil_image = pil_image.resize(
+        tuple(round(x * scale) for x in pil_image.size), resample=Image.BICUBIC
+    )
+    arr = np.array(pil_image)
+    crop_y = (arr.shape[0] - image_size) // 2
+    crop_x = (arr.shape[1] - image_size) // 2
+    return arr[crop_y : crop_y + image_size, crop_x : crop_x + image_size]
 
 
 dirs = glob.glob(os.path.join(img_dir, '*'))

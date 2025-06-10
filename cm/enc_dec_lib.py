@@ -28,7 +28,6 @@ def load_feature_extractor(args, eval=True):
     return feature_extractor
 
 def load_discriminator_and_d_feature_extractor(image_size, discriminator_use_fp16, discriminator_class_cond, load_feature=False, load_discriminator=False):
-    #assert (args.gan_training == True) == (args.d_architecture == 'StyleGAN-XL')
     if load_discriminator:
         from pg_modules.projector import F_RandomProj
         from pg_modules.discriminator import MultiScaleD
