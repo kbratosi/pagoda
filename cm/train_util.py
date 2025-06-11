@@ -631,7 +631,7 @@ class CMTrainLoop(TrainLoop):
             if self.args.gpu_usage:
                 self.print_gpu_usage('Before training')
             
-            # Evaluate DECODER under following conditions:
+            # Evaluate DECODER:
             # * At regular intervals during training (eval_decoder_interval).
             # * After pretraining is complete (pretraining_step).
             # * At key milestones, such as the end of learning rate annealing (lr_anneal_steps) or the end of training (total_training_steps).
@@ -684,7 +684,7 @@ class CMTrainLoop(TrainLoop):
                 th.cuda.empty_cache()
             dist.barrier()
             
-            # Evaluate ODE under following conditions:
+            # Evaluate ODE:
             # * At regular intervals during the pretraining phase (eval_ode_interval).
             # * At the last step before pretraining ends (pretraining_step - 1).
             if (
@@ -779,9 +779,19 @@ class CMTrainLoop(TrainLoop):
         self.eval(model=model, step=step, sampler='onestep' if step == 1 else 'heun', rate=rate, ctm=False, delete=True)
 
 
+    # Step flow:
+    # 1. forward-backward for decoder.
+    # If not using pgd, update decoder parameters.
+    # Else:
+    #   If step is even:
+    #     2. update decoder parameters.
+    #     3. if running separate_update (?) and we're past pretraining, forward-backward for GAN.
+    #     4. if using recon_discriminator, forward-backward for discriminator and run optimizer for recon_discriminator.
+    #   If step is odd:
+    #     2. run optimizer for decoder_discriminator.
     def run_step(self, batch, cond):
-        #current = time.time()
         self.forward_backward(batch, cond)
+        
         if self.args.training_mode == 'pgd':
             if self.step % 2 == 0:
                 self.update_parameter(self.mp_decoder_trainer, self.opt_dec, self.ema_rate)
@@ -803,6 +813,9 @@ class CMTrainLoop(TrainLoop):
 
 
     def loss_compute(self, ddp1, ddp2, compute_losses):
+        '''
+        Compute losses with distributed data parallel (DDP) support.
+        '''
         losses = {}
         if ddp1 == None:
             losses = compute_losses()
@@ -815,8 +828,25 @@ class CMTrainLoop(TrainLoop):
                         losses = compute_losses()
         return losses
 
-
+    # Forward-backward flow:
+    # 1. Reset gradients for all trainers.
+    # 2. For each microbatch:
+    #   Get microbatch and move to GPU.
+    #   If step is even:
+    #     Compute losses for decoder
+    #     -- case discriminator --
+    #       get mean of recon_discriminator_loss
+    #       run backward pass for recon_discriminator
+    #     -- case reconstruction --
+    #       calculate loss from discriminator_loss and recon_discriminator_loss
+    #       run backward pass for decoder
+    #     -- case gan --
+    #       calculate loss from discriminator_loss
+    #       run backward pass for decoder
+    #   Else:
+    #     Compute losses for decoder_discriminator.
     def forward_backward(self, batch, cond, mode='reconstruction'):
+        # Reset gradients for all trainers
         self.mp_decoder_trainer.zero_grad()
         if self.args.recon_discriminator:
             self.mp_recon_discriminator_trainer.zero_grad()
