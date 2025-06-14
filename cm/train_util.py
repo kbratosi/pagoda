@@ -253,9 +253,14 @@ class TrainLoop:
                         classes = th.ones(size=(batch_size,), device=dist_util.dev(), dtype=int) * self.args.train_classes
                         model_kwargs["y"] = classes
                     elif self.args.train_classes == -2:
+                        # 32
                         # classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387,
                         #           388, 417, 562, 614, 759, 789, 800, 812, 848, 933, 973, 980]
-                        classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387]
+                        # 20
+                        # classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387]
+                        # 16
+                        classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281]
+
                         assert batch_size % len(classes) == 0
                         model_kwargs["y"] = th.tensor([x for x in classes for _ in range(batch_size // len(classes))], device=dist_util.dev())
                     else:
@@ -675,11 +680,27 @@ class CMTrainLoop(TrainLoop):
                 del model_state_dict
                 
                 if dist.get_rank() == 0:
+                    # Close TensorFlow session
                     self.evaluator.sess.close()
-                    del self.evaluator.sess, self.evaluator.manifold_estimator, self.evaluator.image_input, self.evaluator.softmax_input
-                    del self.evaluator.pool_features, self.evaluator.softmax
+                    del self.evaluator.sess
+
+                    # Delete Evaluator attributes
+                    del self.evaluator.manifold_estimator
+                    del self.evaluator.image_input
+                    del self.evaluator.softmax_input
+                    del self.evaluator.pool_features
+                    del self.evaluator.softmax
+
+                    # Reset TensorFlow graph
                     tf.reset_default_graph()
-                    del self.evaluator, self.ref_acts, self.ref_stats, self.ref_stats_spatial
+
+                    # Delete reference activations and statistics
+                    del self.ref_acts
+                    del self.ref_stats
+                    del self.ref_stats_spatial
+
+                    # Delete Evaluator instance
+                    del self.evaluator
                 gc.collect()
                 th.cuda.empty_cache()
             dist.barrier()
@@ -766,14 +787,6 @@ class CMTrainLoop(TrainLoop):
         if not saved:
             self.save()
 
-
-    def save_check(self, rate):
-        if self.args.training_mode.lower() == 'ctm':
-            assert rate == 0.999
-            fid = self.eval(step=1, rate=rate, ctm=True, generator=get_generator('determ', self.args.eval_num_samples, self.args.eval_seed),
-                                  class_generator=get_generator('determ', self.args.eval_num_samples, 0),
-                          metric='similarity', delete=True, out=True)
-            return fid
 
     def evaluation(self, model, step, rate):
         self.eval(model=model, step=step, sampler='onestep' if step == 1 else 'heun', rate=rate, ctm=False, delete=True)
@@ -911,6 +924,9 @@ class CMTrainLoop(TrainLoop):
                     #loss = self.diffusion.null(micro).mean()
                     log_loss_dict({k: v.view(-1) for k, v in losses.items()})
                     self.mp_decoder_discriminator_trainer.backward(loss)
+                del compute_losses, loss, losses
+                gc.collect()
+                th.cuda.empty_cache()
             elif self.args.training_mode == 'diffusion':
                 compute_losses = functools.partial(
                     self.diffusion.diffusion_losses,
