@@ -105,7 +105,7 @@ def ctm_loss_defaults(data_name):
         ema_rate="0.999,0.9999,0.9999432189950708",
         decoder_deactivate_alpha=True,
         decoder_distill_frequency=1,
-        decoder_model_channels=128,
+        # decoder_model_channels=128,
         decoder_channel_mult="2,2,2",
         decoder_num_blocks=4,
         decoder_distill_weight=0.1,

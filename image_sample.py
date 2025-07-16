@@ -52,6 +52,8 @@ def main():
     model, diffusion = create_model_and_diffusion(args, type_=type_)
     # model, diffusion = create_model_and_diffusion(args)
 
+    
+
     if 'pkl' in args.model_path:
         import pickle
         with open(args.model_path, 'rb') as f:
@@ -128,11 +130,11 @@ def main():
                                f'{args.training_mode}_{args.sampler}_sampler_{args.sampling_steps}_steps_{step}_itrs_{ema}_ema_{"".join([str(i) for i in ts])}_gamma_{args.gamma}')
 
     else:
-        out_dir = os.path.join(args.out_dir,
-                                f'{args.training_mode}_{args.sampler}_sampler_{args.sampling_steps}_steps_{step}_itrs_{ema}_ema_{args.rho}_rho')
+        out_dir = os.path.join(args.out_dir, "samples")
+                                # f'{args.training_mode}_{args.sampler}_sampler_{args.sampling_steps}_steps_{step}_itrs_{ema}_ema_{args.rho}_rho')
     os.makedirs(out_dir, exist_ok=True)
     itr = 0
-    eval_num_samples = 0
+    num_generated_samples = 0
     while itr * args.batch_size < args.eval_num_samples:
         if args.true_input_size == 32:
             #from pytorch_wavelets import DWTForward, DWTInverse
@@ -154,25 +156,28 @@ def main():
         #if args.large_log:
         print("x_T: ", x_T[0][0][0][0])
 
+        current_class = 500 + int(num_generated_samples / 100)
+
         current = time.time()
         model_kwargs = {}
         if args.class_cond:
-            if args.train_classes >= 0:
-                classes = th.ones(size=(args.batch_size,), device='cuda:'+str(args.device_id), dtype=int) * int(args.train_classes)
-            elif args.train_classes == -2:
-                classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387,
-                           388, 417, 562, 614, 759, 789, 800, 812, 848, 933, 973, 980]
-                assert args.batch_size % len(classes) == 0
-                #print("!!!!!!!!!!!!!!: ", [x for x in classes for _ in range(args.batch_size // len(classes))])
-                #model_kwargs["y"] = th.from_numpy(np.array([[[x] * (args.batch_size // len(classes)) for x in classes]]).reshape(-1)).to(dist_util.dev())
-                classes = th.tensor([x for x in classes for _ in range(args.batch_size // len(classes))], device='cuda:'+str(args.device_id))
-            else:
-                classes = th.randint(
-                    low=0, high=args.num_classes, size=(args.batch_size,), device='cuda:'+str(args.device_id)
-                )
+            classes = th.ones(size=(args.batch_size,), device='cuda:'+str(args.device_id), dtype=int) * current_class
+            # if args.train_classes >= 0:
+            #     classes = th.ones(size=(args.batch_size,), device='cuda:'+str(args.device_id), dtype=int) * int(args.train_classes)
+            # elif args.train_classes == -2:
+            #     classes = [0, 1, 9, 11, 29, 31, 33, 55, 76, 89, 90, 130, 207, 250, 279, 281, 291, 323, 386, 387,
+            #                388, 417, 562, 614, 759, 789, 800, 812, 848, 933, 973, 980]
+            #     assert args.batch_size % len(classes) == 0
+            #     #print("!!!!!!!!!!!!!!: ", [x for x in classes for _ in range(args.batch_size // len(classes))])
+            #     #model_kwargs["y"] = th.from_numpy(np.array([[[x] * (args.batch_size // len(classes)) for x in classes]]).reshape(-1)).to(dist_util.dev())
+            #     classes = th.tensor([x for x in classes for _ in range(args.batch_size // len(classes))], device='cuda:'+str(args.device_id))
+            # else:
+            #     classes = th.randint(
+            #         low=0, high=args.num_classes, size=(args.batch_size,), device='cuda:'+str(args.device_id)
+            #     )
             model_kwargs["y"] = classes
-            #if args.large_log:
-            print("classes: ", model_kwargs)
+            if args.large_log:
+                print("classes: ", model_kwargs)
         with th.no_grad():
             current = time.time()
             x = karras_sample(
@@ -223,29 +228,29 @@ def main():
                 nrow = 1
                 image_grid = make_grid((x[k:k+1] + 1.) / 2., nrow, padding=2)
                 if args.class_cond:
-                    with bf.BlobFile(os.path.join(out_dir, f"class_{args.train_classes}_sample_{k}.png"), "wb") as fout:
+                    with bf.BlobFile(os.path.join(out_dir, f"{current_class}/{k:06d}.png"), "wb") as fout:
                         save_image(image_grid, fout)
                 else:
                     with bf.BlobFile(os.path.join(out_dir, f"sample_{k}.png"), "wb") as fout:
                         save_image(image_grid, fout)
-            np.savez(os.path.join(out_dir, f"sample_{args.train_classes}.npz"), sample.cpu().detach().numpy())
-            import sys
-            sys.exit()
-        if args.save_format == 'png':
+            # np.savez(os.path.join(out_dir, f"sample_{args.train_classes}.npz"), sample.cpu().detach().numpy())
+            # import sys
+            # sys.exit()
+        # if args.save_format == 'png':
             print("x range: ", x.min(), x.max())
             nrow = int(np.sqrt(sample.shape[0]))
             image_grid = make_grid((x + 1.) / 2., nrow, padding=2)
             if args.class_cond:
-                with bf.BlobFile(os.path.join(out_dir, f"class_{args.train_classes}_sample_{r}.png"), "wb") as fout:
+                with bf.BlobFile(os.path.join(out_dir, f"class_{current_class}_summary.png"), "wb") as fout:
                     save_image(image_grid, fout)
             else:
                 with bf.BlobFile(os.path.join(out_dir, f"sample_{r}.png"), "wb") as fout:
                     save_image(image_grid, fout)
-            import sys
-            sys.exit()
-        eval_num_samples += sample.shape[0]
+            # import sys
+            # sys.exit()
+        num_generated_samples += sample.shape[0]
         if args.large_log:
-            print(f"sample {eval_num_samples} time {time.time() - current} sec")
+            print(f"sample {num_generated_samples} time {time.time() - current} sec")
         itr += 1
 
     # dist.barrier()

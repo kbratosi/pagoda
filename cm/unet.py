@@ -728,7 +728,7 @@ class UNetModel(nn.Module):
         self.no_grad = no_grad
 
         self.in_channels = in_channels
-        self.model_channels = model_channels
+        self.model_channels = model_channels # <-> --num_channels=192
         self.out_channels = out_channels
         self.num_res_blocks = num_res_blocks
         self.dropout = dropout
@@ -765,7 +765,7 @@ class UNetModel(nn.Module):
         )
         self._feature_size = ch
         input_block_chans = [ch]
-        ds = 1
+        ds = 1 # downsampling factor
         for level, mult in enumerate(self.encoder_channel_mult):
             for _ in range(num_res_blocks):
                 layers = [
@@ -958,6 +958,11 @@ class UNetModel(nn.Module):
             nn.SiLU(),
             zero_module(conv_nd(dims, ch, out_channels, 3, padding=1)),
         )
+        # ### ?
+        # for i, layer in enumerate(self.output_blocks):
+        #     print(f"Layer {i}: {layer}")
+
+
 
     def convert_to_fp16(self):
         """

@@ -389,7 +389,9 @@ class TrainLoop:
         else:
             return psnr, ssim
 
-    def calculate_inception_stats(self, data_name, image_path, num_samples=50000, batch_size=100, device=th.device('cuda')):
+
+    def calculate_inception_stats(self, image_path): #, num_samples=50000, batch_size=100, device=th.device('cuda')):
+        # load images from image_path
         filenames = glob.glob(os.path.join(image_path, '*.npz'))
         imgs = []
         for file in filenames:
@@ -403,12 +405,13 @@ class TrainLoop:
             except:
                 pass
         imgs = np.concatenate(imgs, axis=0)
+
         os.makedirs(os.path.join(image_path, 'single_npz'), exist_ok=True)
-        np.savez(os.path.join(os.path.join(image_path, 'single_npz'), f'data'),
-                    imgs)  # , labels)
+        np.savez(os.path.join(os.path.join(image_path, 'single_npz'), f'data'), imgs)  # , labels)
+        
         logger.log("computing sample batch activations...")
-        sample_acts = self.evaluator.read_activations(
-            os.path.join(os.path.join(image_path, 'single_npz'), f'data.npz'))
+        sample_acts = self.evaluator.read_activations(os.path.join(os.path.join(image_path, 'single_npz'), f'data.npz'))
+        
         logger.log("computing/reading sample batch statistics...")
         sample_stats, sample_stats_spatial = tuple(self.evaluator.compute_statistics(x) for x in sample_acts)
         with open(os.path.join(os.path.join(image_path, 'single_npz'), f'stats'), 'wb') as f:
@@ -416,6 +419,7 @@ class TrainLoop:
         with open(os.path.join(os.path.join(image_path, 'single_npz'), f'acts'), 'wb') as f:
             pickle.dump({'acts': sample_acts[0], 'acts_spatial': sample_acts[1]}, f)
         return sample_acts, sample_stats, sample_stats_spatial
+
 
     def compute_fid(self, mu, sigma, ref_mu=None, ref_sigma=None):
         if np.array(ref_mu == None).sum():
@@ -924,9 +928,6 @@ class CMTrainLoop(TrainLoop):
                     #loss = self.diffusion.null(micro).mean()
                     log_loss_dict({k: v.view(-1) for k, v in losses.items()})
                     self.mp_decoder_discriminator_trainer.backward(loss)
-                del compute_losses, loss, losses
-                gc.collect()
-                th.cuda.empty_cache()
             elif self.args.training_mode == 'diffusion':
                 compute_losses = functools.partial(
                     self.diffusion.diffusion_losses,
@@ -966,8 +967,12 @@ class CMTrainLoop(TrainLoop):
 
     @th.no_grad()
     def eval(self, model, step=1, sampler='exact', teacher=False, ctm=False, rate=0.999, generator=None, class_generator=None, metric='fid', delete=False, out=False):
+        """
+        Evaluation suite used for decorer. 
+        """
         if not model:
             model = self.decoder
+        # generate samples, put them in a temporary directory
         sample_dir = f"{self.step}_{sampler}_{step}_{rate}"
         if generator != None:
             sample_dir = sample_dir + "_seed_42"
@@ -977,21 +982,21 @@ class CMTrainLoop(TrainLoop):
                       class_generator=class_generator, sample_dir=sample_dir, fid_eval=True)
         gc.collect()
         th.cuda.empty_cache()
+        
+        # Do calculations
         if dist.get_rank() == 0:
-            sample_acts, sample_stats, sample_stats_spatial = self.calculate_inception_stats(self.args.data_name,
-                                                                            bf.join(get_blob_logdir(), sample_dir),
-                                                                            num_samples=self.args.eval_num_samples)
+            sample_acts, sample_stats, sample_stats_spatial = self.calculate_inception_stats(bf.join(get_blob_logdir(), sample_dir))
             logger.log(f"Inception Score-{self.args.eval_num_samples // 1000}k:", self.evaluator.compute_inception_score(sample_acts[0]))
             logger.log(f"FID-{self.args.eval_num_samples // 1000}k:", sample_stats.frechet_distance(self.ref_stats))
             logger.log(f"sFID-{self.args.eval_num_samples // 1000}k:", sample_stats_spatial.frechet_distance(self.ref_stats_spatial))
+            
             prec, recall = self.evaluator.compute_prec_recall(self.ref_acts[0], sample_acts[0])
             logger.log("Precision:", prec)
             logger.log("Recall:", recall)
             del sample_acts, sample_stats, sample_stats_spatial
             if delete:
                 shutil.rmtree(os.path.join(get_blob_logdir(), sample_dir))
-            #self.evaluator.sess.close()
-            #tf.reset_default_graph()
+
 
     def log_step(self):
         step = self.global_step

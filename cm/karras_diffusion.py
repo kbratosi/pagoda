@@ -222,7 +222,7 @@ class KarrasDenoiser:
             #print("x_T, T: ", (x_T ** 2).mean().item(), (T ** 2).mean().item(), enable_grad, model_kwargs)
             c_in = append_dims(self.get_c_in(T), x_T.ndim)
             if self.args.decoder_style == 'stylegan':
-                out = model((c_in * x_T).view(x_T.shape[0],-1), model_kwargs['y'])
+                model_output = model((c_in * x_T).view(x_T.shape[0],-1), model_kwargs['y'])
                 #assert not self.args.class_cond
             else:
                 #print("1 x_T in get_T_to_0: ", x_T.shape)
@@ -232,9 +232,8 @@ class KarrasDenoiser:
                 model_output = model(c_in * x_T, T, **model_kwargs)
                 #c_skip, c_out = [append_dims(x, x_T.ndim) for x in self.get_decoder_scalings(T)]
                 #print("c_skip: ", c_skip.shape, c_out.shape)
-                out = model_output
                 #out = c_out * model_output + c_skip * x_T
-        return out
+        return model_output
 
     def get_denoiser(self, ode, x_t, t, enable_grad=False, **model_kwargs):
         if enable_grad:
@@ -357,13 +356,11 @@ class KarrasDenoiser:
         return discriminator_loss
 
     def get_recon_loss(self, decoder, x_start, x_end, loss1, step, **model_kwargs):
-
         if step % (2 * self.args.decoder_gan_frequency) == 0:
             T_to_0_estimate = self.get_T_to_0(decoder, x_end, enable_grad=True, **model_kwargs)
             self.fake_x = T_to_0_estimate
             T_to_0_target = x_start
-            #print("recon: ", T_to_0_target.shape, T_to_0_estimate.shape)
-            #decoder_distill = ((T_to_0_target - T_to_0_estimate) ** 2).mean([1,2,3])
+            # Why?
             if x_start.shape[2] < 256:
                 T_to_0_estimate = F.interpolate(T_to_0_estimate, size=224, mode="bilinear")
                 T_to_0_target = F.interpolate(T_to_0_target, size=224, mode="bilinear")
@@ -404,7 +401,8 @@ class KarrasDenoiser:
                     script_util.save(T_to_0_estimate, logger.get_dir(), f'T_to_0_{step}_estimate')  # _{r}')
                     script_util.save(T_to_0_target, logger.get_dir(), f'T_to_0_{step}_target')  # _{r}')
             return decoder_distill, loss1_grad_norm
-        return self.null(x_start)
+        else:
+            return self.null(x_start)
 
     def get_ode_loss(self, denoiser, x_start, step, **model_kwargs):
         t, _ = self.diffusion_schedule_sampler.sample(x_start.shape[0], dist_util.dev())
@@ -517,6 +515,7 @@ class KarrasDenoiser:
                         x_start, x_end, None, step - init_step, learn_generator=False, recon=True, **model_kwargs)
                 else:
                     raise NotImplementedError
+            
         if step % 2 == 1:
             terms['discriminator_loss'] = self.get_decoder_discriminator_loss(decoder, decoder_discriminator,
                                        x_start, None, None, step - init_step, learn_generator=False, recon=False, **model_kwargs)
