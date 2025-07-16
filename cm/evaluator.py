@@ -265,13 +265,13 @@ class Evaluator:
     ) -> Tuple[FIDStatistics, FIDStatistics]:
         try:
             obj = np.load(npz_path)
-            if "mu" in list(obj.keys()):
-                return FIDStatistics(obj["mu"], obj["sigma"]), FIDStatistics(
-                    obj["mu_s"], obj["sigma_s"]
-                )
+            # if "mu" in list(obj.keys()):
+            return FIDStatistics(obj["mu"], obj["sigma"]), FIDStatistics(
+                obj["mu_s"], obj["sigma_s"]
+            )
         except:
             a = tuple(self.compute_statistics(x) for x in activations)
-            print(a[0].shape)
+            # print(a[0].shape)
             return a
 
     def compute_statistics(self, activations: np.ndarray) -> FIDStatistics:

@@ -545,18 +545,18 @@ class CMTrainLoop(TrainLoop):
             import tensorflow.compat.v1 as tf
             from cm.evaluator import Evaluator
         if dist.get_rank() == 0:
-            # if self.args.eval_fid or self.args.eval_similarity:
-            #     #import tensorflow.compat.v1 as tf
-            #     #from cm.evaluator import Evaluator
-            #     config = tf.ConfigProto(
-            #         allow_soft_placement=True  # allows DecodeJpeg to run on CPU in Inception graph
-            #     )
-            #     config.gpu_options.allow_growth = True
-            #     config.gpu_options.per_process_gpu_memory_fraction = 0.1
-            #     self.evaluator = Evaluator(tf.Session(config=config), batch_size=100)
-            #     self.ref_acts = self.evaluator.read_activations(self.args.ref_path)
-            #     self.ref_stats, self.ref_stats_spatial = self.evaluator.read_statistics(self.args.ref_path, self.ref_acts)
-            #     del self.evaluator, self.ref_acts, self.ref_stats, self.ref_stats_spatial
+            if self.args.eval_fid or self.args.eval_similarity:
+                #import tensorflow.compat.v1 as tf
+                #from cm.evaluator import Evaluator
+                config = tf.ConfigProto(
+                    allow_soft_placement=True  # allows DecodeJpeg to run on CPU in Inception graph
+                )
+                config.gpu_options.allow_growth = True
+                config.gpu_options.per_process_gpu_memory_fraction = 0.1
+                self.evaluator = Evaluator(tf.Session(config=config), batch_size=100)
+                self.ref_acts = self.evaluator.read_activations(self.args.ref_path)
+                self.ref_stats, self.ref_stats_spatial = self.evaluator.read_statistics(self.args.ref_path, self.ref_acts)
+                del self.evaluator, self.ref_acts, self.ref_stats, self.ref_stats_spatial
             if self.args.check_dm_performance:
                 if os.path.exists(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'stats')):
                     with open(os.path.join(os.path.join(self.args.dm_sample_path_seed_42, 'single_npz'), f'acts'), 'rb') as f:
