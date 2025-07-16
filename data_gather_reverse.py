@@ -146,6 +146,7 @@ def main():
                                 f'{args.training_mode}_{args.sampler}_sampler_{args.sampling_steps}_steps_{step}_itrs_{ema}_ema_{args.rho}_rho')
     
     os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'samples'), exist_ok=True)
     
     itr = 0
     eval_num_samples = 0
@@ -251,30 +252,46 @@ def main():
             print(sample.shape)
             print("sample scale: ", (sample ** 2).mean())
             x_T = x_T.permute(0,2,3,1).numpy()
-            for i in range(sample.shape[0]):
-                #if args.reverse:
-                dir_ = cond['path'][i].split('/')[-2]
-                filename = cond['path'][i].split('/')[-1].split('.')[0]
-                #else:
-                #    dir_ = 'random'
-                #    filename = num_sample
-                os.makedirs(os.path.join(out_dir, f"{dir_}"), exist_ok=True)
-                if args.class_cond:
+            if args.class_cond:
+                for i in range(sample.shape[0]):
+                    #if args.reverse:
+                    dir_ = cond['path'][i].split('/')[-2]
+                    filename = cond['path'][i].split('/')[-1].split('.')[0]
+                    #else:
+                    #    dir_ = 'random'
+                    #    filename = num_sample
+                    os.makedirs(os.path.join(out_dir, f"{dir_}"), exist_ok=True)
+                    if args.class_cond:
+                        if args.reverse:
+                            np.savez(os.path.join(out_dir, f"{dir_}/{filename}.npz"), sample[i])
+                        else:
+                            np.savez(os.path.join(out_dir, f"{dir_}/{filename}.npz"), sample[i], x_T[i])
+                        #print(sample[i].permute(1,2,0).shape)
+                        if args.save_format == 'png':
+                            im = Image.fromarray(sample[i], "RGB")
+                            im.save(os.path.join(out_dir, f"{dir_}/{filename}.png"))
+                            im = Image.fromarray(x_T[i], "RGB")
+                            im.save(os.path.join(out_dir, f"{dir_}/{filename}_img.png"))
+                            #np.savez(os.path.join(out_dir, f"{dir_}/{filename}_img.npz"), x_T[i].numpy())
+                    #np.savez(os.path.join(out_dir, f"{dir_}/sample.npz"), sample,
+                    #                           classes.cpu().detach().numpy())
+                    num_sample += 1
+                    itr += 1
+            else:
+                for i in range(sample.shape[0]):
                     if args.reverse:
-                        np.savez(os.path.join(out_dir, f"{dir_}/{filename}.npz"), sample[i])
+                        np.savez(os.path.join(out_dir, f"sample_{num_sample}.npz"), sample[i])
                     else:
-                        np.savez(os.path.join(out_dir, f"{dir_}/{filename}.npz"), sample[i], x_T[i])
-                    #print(sample[i].permute(1,2,0).shape)
+                        np.savez(os.path.join(out_dir, f"sample_{num_sample}.npz"), sample[i], x_T[i])
+                    #print(sample.permute(1,2,0).shape)
                     if args.save_format == 'png':
                         im = Image.fromarray(sample[i], "RGB")
-                        im.save(os.path.join(out_dir, f"{dir_}/{filename}.png"))
+                        im.save(os.path.join(out_dir, f"samples/{num_sample}.png"))
                         im = Image.fromarray(x_T[i], "RGB")
-                        im.save(os.path.join(out_dir, f"{dir_}/{filename}_img.png"))
-                        #np.savez(os.path.join(out_dir, f"{dir_}/{filename}_img.npz"), x_T[i].numpy())
-                #np.savez(os.path.join(out_dir, f"{dir_}/sample.npz"), sample,
-                #                           classes.cpu().detach().numpy())
-                num_sample += 1
-                itr += 1
+                        im.save(os.path.join(out_dir, f"samples/{num_sample}_img.png"))
+                        #np.savez(os.path.join(out_dir, f"sample_{num_sample}_img.npz"), x_T.numpy())
+                    num_sample += 1
+                    itr += 1
             #import sys
             #sys.exit()
             # if args.reverse:

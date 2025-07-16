@@ -7,3 +7,4 @@ archive/
 .vscode/
 nohup*
 *graph_def.pb
+*.log
