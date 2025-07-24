@@ -1,6 +1,6 @@
 DEFAULT_FLAGS="--xz_type=npz --map_location=cuda --use_MPI=True --new=False --decoder_gan_frequency=1 --num_workers=16 --pretraining_step=-1 --resblock_updown=True --use_scale_shift_norm=True --eval_ode_interval=5000000000 --num_heun_step_random=False --dev_log=True --heun_step_strategy=weighted --save_png=True --check_dm_performance=False --intermediate_samples=True --eval_fid=True --load_ode=False --p_mean=-1.2 --p_std=1.2 --sigma_max=80. --rho=7"
-IMPORTANT_FLAGS="--decoder_style=unet --loss_norm=cnn_vit --ema_rate=0.9999 --training_mode=heun --diffusion_schedule_sampler=lognormal"
-DECODER_FLAGS="--pretraining_step=-1 --activate_from=12  --num_channels=192 --num_head_channels=64 --num_res_blocks=3 --diffusion_weight_schedule=karras"
+IMPORTANT_FLAGS="--decoder_style=unet --loss_norm=cnn_vit --ema_rate=0.9999 --training_mode=diffusion --diffusion_schedule_sampler=lognormal"
+DECODER_FLAGS="--pretraining_step=-1 --activate_from=12  --num_channels=192 --num_head_channels=64 --num_res_blocks=3 --diffusion_weight_schedule=scaled_karras_weight"
 LOG_FLAGS="--gpu_usage=False --large_log=False" # --train_classes=-2"
 # CKPT_FLAGS="--out_dir YOUR_OUT_DIR --ref_path FID_STATS_PATH --teacher_model_path STAGE1_PRETRAINED_DM_PATH --data_dir ImageNet_DATA_DIR --z_no_flip_dir DATA_LATENT_PAIR_DIR --z_flip_dir FLIPED_DATA_LATENT_PAIR_DIR"
 
@@ -20,10 +20,11 @@ RUNTIME_FLAGS="--device=1 \
                --decoder_discriminator_training=True \
                --discriminator_weight=0.2"
 
-BATCH_FLAGS="--sampling_batch=8 \
-             --microbatch 96 \
-             --global_batch_size=96 \
-             --eval_batch=512"
+BATCH_FLAGS="--sampling_batch=16 \
+             --microbatch=32 \
+             --global_batch_size=32 \
+             --eval_batch=512 \
+             --eval_num_samples=50000"
 
 SIZE_FLAGS="--image_size=64 \
             --input_size=64 \
@@ -31,13 +32,12 @@ SIZE_FLAGS="--image_size=64 \
             --pretrained_output_size=64"
 
 INTERVAL_FLAGES="--eval_decoder_interval=10000 \
-                 --save_interval=50000 \
-                 --eval_num_samples=50000 \
+                 --save_interval=10000 \
                  --sample_interval=10000 \
                  --save_period=10000 \
-                 --log_interval=10000"
+                 --log_interval=100"
 
-CKPT_FLAGS="--out_dir out/ffhq_stage2 \
+CKPT_FLAGS="--out_dir out/23-7_ffhq_stage2 \
             --ref_path models/evaluation/ffhq_ref_batch.npz \
             --teacher_model_path models/mine/stage1_ffhq_ema_0.9999_280000.pt \
             --data_dir /home/bratosiewicz/data/ffhq/train \
