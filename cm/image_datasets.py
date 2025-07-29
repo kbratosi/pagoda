@@ -92,33 +92,34 @@ def load_data(
             classes.extend([class_names[cl] for _ in temp_files])
     else:
         all_files = _list_image_files_recursively(data_dir, type=type, proportion=proportion)
-        classes = None
+        # classes = None
+        classes = [0 for _ in all_files]
 
-    if class_cond:
-        # Assume classes are the first part of the filename,
-        # before an underscore.
-        if train_classes == 281:
-            classes = [281 for _ in all_files]
-        if train_classes not in [281, -2]:
-            if class_start != -1 and class_end != -1:
-                class_names = [bf.basename(path).split("_")[0] for path in all_files]
-                sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-                # classes = [sorted_classes[x] for x in class_names]
-                all_files_ = []
-                for cl in sorted(set(class_names))[class_start:class_end]:
-                    print("class: ", cl)
-                    data_dir_ = os.path.join(data_dir, cl)
-                    temp_files = _list_image_files_recursively(data_dir_, type=type, proportion=proportion)
-                    all_files_.extend(temp_files)
-                all_files = all_files_
-                class_names = [bf.basename(path).split("_")[0] for path in all_files]
-                # sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-                classes = [sorted_classes[x] for x in class_names]
-                print("classes: ", classes[:10])
-            else:
-                class_names = [bf.basename(path).split("_")[0] for path in all_files]
-                sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
-                classes = [sorted_classes[x] for x in class_names]
+    # if class_cond:
+    #     # Assume classes are the first part of the filename,
+    #     # before an underscore.
+    #     if train_classes == 281:
+    #         classes = [281 for _ in all_files]
+    #     if train_classes not in [281, -2]:
+    #         if class_start != -1 and class_end != -1:
+    #             class_names = [bf.basename(path).split("_")[0] for path in all_files]
+    #             sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+    #             # classes = [sorted_classes[x] for x in class_names]
+    #             all_files_ = []
+    #             for cl in sorted(set(class_names))[class_start:class_end]:
+    #                 print("class: ", cl)
+    #                 data_dir_ = os.path.join(data_dir, cl)
+    #                 temp_files = _list_image_files_recursively(data_dir_, type=type, proportion=proportion)
+    #                 all_files_.extend(temp_files)
+    #             all_files = all_files_
+    #             class_names = [bf.basename(path).split("_")[0] for path in all_files]
+    #             # sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+    #             classes = [sorted_classes[x] for x in class_names]
+    #             print("classes: ", classes[:10])
+    #         else:
+    #             class_names = [bf.basename(path).split("_")[0] for path in all_files]
+    #             sorted_classes = {x: i for i, x in enumerate(sorted(set(class_names)))}
+    #             classes = [sorted_classes[x] for x in class_names]
 
     if num_data != -1:
         all_files = all_files[:num_data]

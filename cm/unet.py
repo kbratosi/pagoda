@@ -994,9 +994,9 @@ class UNetModel(nn.Module):
         #else:
         #    grad = th.enable_grad()
         #with grad:
-        assert (y is not None) == (
-            self.num_classes is not None
-        ), "must specify y if and only if the model is class-conditional"
+        # assert (y is not None) == (
+        #     self.num_classes is not None
+        # ), "must specify y if and only if the model is class-conditional"
         timesteps = 1000 * 0.25 * th.log(timesteps + 1e-44)
         hs = []
         emb = self.time_embed(timestep_embedding(timesteps, self.model_channels))
