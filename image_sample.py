@@ -133,7 +133,10 @@ def main():
         out_dir = os.path.join(args.out_dir, "samples")
                                 # f'{args.training_mode}_{args.sampler}_sampler_{args.sampling_steps}_steps_{step}_itrs_{ema}_ema_{args.rho}_rho')
     os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(os.path.join(out_dir, 'summary'), exist_ok=True)
+    
     itr = 0
+    counter = 0
     num_generated_samples = 0
     while itr * args.batch_size < args.eval_num_samples:
         if args.true_input_size == 32:
@@ -156,11 +159,12 @@ def main():
         #if args.large_log:
         print("x_T: ", x_T[0][0][0][0])
 
-        current_class = 500 + int(num_generated_samples / 100)
 
         current = time.time()
         model_kwargs = {}
         if args.class_cond:
+            current_class = int(num_generated_samples / 100)
+            counter = counter % 100
             classes = th.ones(size=(args.batch_size,), device='cuda:'+str(args.device_id), dtype=int) * current_class
             # if args.train_classes >= 0:
             #     classes = th.ones(size=(args.batch_size,), device='cuda:'+str(args.device_id), dtype=int) * int(args.train_classes)
@@ -228,11 +232,12 @@ def main():
                 nrow = 1
                 image_grid = make_grid((x[k:k+1] + 1.) / 2., nrow, padding=2)
                 if args.class_cond:
-                    with bf.BlobFile(os.path.join(out_dir, f"{current_class}/{k:06d}.png"), "wb") as fout:
+                    with bf.BlobFile(os.path.join(out_dir, f"{current_class}/{counter:06d}.png"), "wb") as fout:
                         save_image(image_grid, fout)
                 else:
-                    with bf.BlobFile(os.path.join(out_dir, f"sample_{k}.png"), "wb") as fout:
+                    with bf.BlobFile(os.path.join(out_dir, f"{num_generated_samples + k:05d}.png"), "wb") as fout:
                         save_image(image_grid, fout)
+                counter += 1
             # np.savez(os.path.join(out_dir, f"sample_{args.train_classes}.npz"), sample.cpu().detach().numpy())
             # import sys
             # sys.exit()
@@ -241,10 +246,14 @@ def main():
             nrow = int(np.sqrt(sample.shape[0]))
             image_grid = make_grid((x + 1.) / 2., nrow, padding=2)
             if args.class_cond:
-                with bf.BlobFile(os.path.join(out_dir, f"class_{current_class}_summary.png"), "wb") as fout:
-                    save_image(image_grid, fout)
+                if itr % 2 == 0:
+                    with bf.BlobFile(os.path.join(out_dir, f"summary/class_{current_class}_a.png"), "wb") as fout:
+                        save_image(image_grid, fout)
+                else:
+                    with bf.BlobFile(os.path.join(out_dir, f"summary/class_{current_class}_b.png"), "wb") as fout:
+                        save_image(image_grid, fout)
             else:
-                with bf.BlobFile(os.path.join(out_dir, f"sample_{r}.png"), "wb") as fout:
+                with bf.BlobFile(os.path.join(out_dir, f"summary/sample_{r}.png"), "wb") as fout:
                     save_image(image_grid, fout)
             # import sys
             # sys.exit()

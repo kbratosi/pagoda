@@ -8,3 +8,4 @@ archive/
 nohup*
 *graph_def.pb
 *.log
+*.out

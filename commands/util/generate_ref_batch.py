@@ -3,9 +3,9 @@ import random
 import numpy as np
 from PIL import Image
 
-PATH = '/home/bratosiewicz/data/ffhq'
-OUTPUT_FILE = 'out/ffhq_ref_batch.npz'
-IMAGE_SIZE = (64, 64)
+PATH = '/home/bratosiewicz/data/ffhq/all'
+OUTPUT_FILE = 'models/evaluation/ffhq_ref_batch_512.npz'
+IMAGE_SIZE = (512, 512)
 
 # Collect all image file paths
 image_extensions = ('.jpg', '.jpeg', '.png', '.bmp', '.gif')

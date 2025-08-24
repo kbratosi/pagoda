@@ -19,28 +19,28 @@ RUNTIME_FLAGS="--device=1 \
                --progressive=True \
                --decoder_training=True \
                --decoder_discriminator_training=True \
-               --discriminator_weight=0.2"
+               --discriminator_weight=1.0"
 
-BATCH_FLAGS="--sampling_batch=16 \
-             --microbatch=16 \
+BATCH_FLAGS="--sampling_batch=8 \
+             --microbatch=8 \
              --global_batch_size=16 \
-             --eval_batch=256 \
+             --eval_batch=100 \
              --eval_num_samples=50000"
 
-SIZE_FLAGS="--image_size=128 \
+SIZE_FLAGS="--image_size=256 \
             --input_size=64 \
             --pretrained_input_size=64 \
-            --pretrained_output_size=64"
+            --pretrained_output_size=128"
 
 INTERVAL_FLAGS="--eval_decoder_interval=10000 \
-                 --save_interval=10000 \
-                 --sample_interval=10000 \
-                 --save_period=10000 \
-                 --log_interval=100"
+                --save_interval=10000 \
+                --sample_interval=10000 \
+                --save_period=10000 \
+                --log_interval=100"
 
-CKPT_FLAGS="--out_dir out/8-6_pgd_stage3_128 \
-            --ref_path models/evaluation/ffhq_ref_batch_128.npz \
-            --teacher_model_path models/mine/stage2_ffhq_decoder_ema_0.9999_320000.pt \
+CKPT_FLAGS="--out_dir out/8-23_pgd_stage3_256 \
+            --ref_path models/evaluation/ffhq_ref_batch_256.npz \
+            --teacher_model_path models/mine/stage3_ffhq_128_decoder_ema_0.9999_100000.pt \
             --data_dir      /home/bratosiewicz/data/ffhq/train \
             --z_no_flip_dir /home/bratosiewicz/pagoda/out/ffhq-xz-no-flip \
             --z_flip_dir    /home/bratosiewicz/pagoda/out/ffhq-xz-flip"

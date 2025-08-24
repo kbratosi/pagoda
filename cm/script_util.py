@@ -471,7 +471,8 @@ def create_model(
                 else:
                     decoder_channel_mult = (0.5, 1, 1, 1, 1, 2, 4)
             else:
-                decoder_channel_mult = (0.5, 1, 1, 1, 1, 2, 4)
+                decoder_channel_mult = (0.5, 1, 1, 1, 2, 3, 4)
+                # decoder_channel_mult = (0.5, 1, 1, 2, 2, 4, 4)
         elif output_size == 256:
             #decoder_channel_mult = (1, 1, 2, 2, 4, 4)
             if input_size == 32:
