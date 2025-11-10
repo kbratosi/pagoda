@@ -12,7 +12,7 @@ RUNTIME_FLAGS="--device=1 \
                --class_cond=False \
                --separate_update=False \
                --recon_discriminator=True \
-               --recon_discriminator_weight=0.2 \
+               --recon_discriminator_weight=0.1 \
                --decoder_adaptive_weight=True \
                --decoder_override=True \
                --superres=True \
@@ -38,7 +38,7 @@ INTERVAL_FLAGS="--eval_decoder_interval=10000 \
                 --save_period=10000 \
                 --log_interval=100"
 
-CKPT_FLAGS="--out_dir out/8-23_pgd_stage3_256 \
+CKPT_FLAGS="--out_dir out/8-26_pgd_stage3_256 \
             --ref_path models/evaluation/ffhq_ref_batch_256.npz \
             --teacher_model_path models/mine/stage3_ffhq_128_decoder_ema_0.9999_100000.pt \
             --data_dir      /home/bratosiewicz/data/ffhq/train \

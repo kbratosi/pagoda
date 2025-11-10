@@ -3,8 +3,8 @@ import random
 import numpy as np
 from PIL import Image
 
-PATH = '/home/bratosiewicz/data/ffhq/all'
-OUTPUT_FILE = 'models/evaluation/ffhq_ref_batch_512.npz'
+PATH = '/home/bratosiewicz/stylegan3/out/11-08-ffhq-512'
+OUTPUT_FILE = '/home/bratosiewicz/stylegan3/out/11-08-ffhq-512/stylegan3_batch_512.npz'
 IMAGE_SIZE = (512, 512)
 
 # Collect all image file paths

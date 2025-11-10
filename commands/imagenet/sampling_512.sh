@@ -37,9 +37,9 @@ $DECODER_FLAGS \
 $CHANGEABLE_FLAGS \
 $ACTUALLY_IMPORTANT_FLAGS \
 $CKPT_FLAGS \
---out_dir out/sampling/8-24-pgd-512-1000_class-100_each \
+--out_dir out/sampling/9-4-inference-time \
 --model_path models/stage3_onestep_generator_64x64_to_512x512_ema_0.999_070000_fid_1.80.pt \
---eval_num_samples=50000 \
+--eval_num_samples=1000 \
 --stochastic_seed=True \
 --save_format=png_each \
 --ind_1=5 \

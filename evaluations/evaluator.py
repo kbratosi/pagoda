@@ -32,7 +32,6 @@ def main():
     parser.add_argument("ref_batch", help="path to reference batch npz file")
     parser.add_argument("sample_batch", help="path to sample batch npz file")
     args = parser.parse_args()
-
     config = tf.ConfigProto(
         allow_soft_placement=True  # allows DecodeJpeg to run on CPU in Inception graph
     )
@@ -56,6 +55,7 @@ def main():
             imgs.append(img)
         except:
             pass
+
     imgs = np.concatenate(imgs, axis=0)
     os.makedirs(os.path.join(args.sample_batch, 'single_npz'), exist_ok=True)
     np.savez(os.path.join(os.path.join(args.sample_batch, 'single_npz'), f'data'),

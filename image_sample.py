@@ -36,10 +36,10 @@ import torch.nn.functional as F
 def main():
     args = create_argparser().parse_args()
 
-    # if args.use_MPI:
-    #     dist_util.setup_dist(args.device_id)
-    # else:
-    #     dist_util.setup_dist_without_MPI(args.device_id)
+    if args.use_MPI:
+        dist_util.setup_dist(args.device_id)
+    else:
+        dist_util.setup_dist_without_MPI(args.device_id)
 
     logger.configure(args, dir=args.out_dir)
 
@@ -138,6 +138,10 @@ def main():
     itr = 0
     counter = 0
     num_generated_samples = 0
+
+    import time
+
+    start = time.time()
     while itr * args.batch_size < args.eval_num_samples:
         if args.true_input_size == 32:
             #from pytorch_wavelets import DWTForward, DWTInverse
@@ -163,7 +167,7 @@ def main():
         current = time.time()
         model_kwargs = {}
         if args.class_cond:
-            current_class = int(num_generated_samples / 100)
+            current_class = 500 + int(num_generated_samples / 100)
             counter = counter % 100
             classes = th.ones(size=(args.batch_size,), device='cuda:'+str(args.device_id), dtype=int) * current_class
             # if args.train_classes >= 0:
@@ -261,8 +265,11 @@ def main():
         if args.large_log:
             print(f"sample {num_generated_samples} time {time.time() - current} sec")
         itr += 1
-
+    print("Start: ", start)
+    stop = time.time()
+    print("Stop: ", stop)
     # dist.barrier()
+    print("Total time: ", stop - start)
     logger.log("sampling complete")
 
 def create_argparser():
