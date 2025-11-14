@@ -8,6 +8,7 @@ def parse_csv(file_path):
         for id in range(0, len(lines), 6):
             step = int(id / 6 * 2000) 
             inception = float(lines[id].split(':')[1][:-1])
+            # fid = float(lines[id+1].split(':')[1][:-1])
             fid = float(lines[id+1].split(':')[1].split(",")[0][2:])
             precision = float(lines[id+3].split(':')[1][1:-1])
             recall = float(lines[id+4].split(':')[1][1:-1])
@@ -24,4 +25,4 @@ def parse_csv(file_path):
         output.writeheader()
         output.writerows(results)
 
-parse_csv('stage2_raw.log')
+parse_csv('stage3b_raw.log')
