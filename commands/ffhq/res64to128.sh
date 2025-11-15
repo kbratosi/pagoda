@@ -5,21 +5,21 @@ STAGE_1_FLAGS="--num_channels=192 --num_channels_high=256 --num_head_channels=64
 LOG_FLAGS="--gpu_usage=False --large_log=False"
 # CKPT_FLAGS="--out_dir YOUR_OUT_DIR --ref_path FID_STATS_PATH --teacher_model_path STAGE1_PRETRAINED_DM_PATH --data_dir ImageNet_DATA_DIR --z_no_flip_dir DATA_LATENT_PAIR_DIR --z_flip_dir FLIPED_DATA_LATENT_PAIR_DIR"
 
-RUNTIME_FLAGS="--device=2 \
+RUNTIME_FLAGS="--device=0 \
                --port 128 \
                --use_MPI=True \
                --use_fp16=True \
                --class_cond=False \
                --separate_update=False \
                --recon_discriminator=True \
-               --recon_discriminator_weight=0.0 \
-               --decoder_adaptive_weight=True \
+               --recon_discriminator_weight=0.2 \
+               --decoder_adaptive_weight=False \
                --decoder_override=True \
                --superres=True \
                --progressive=True \
                --decoder_training=True \
-               --decoder_discriminator_training=True \
-               --discriminator_weight=0.2"
+               --decoder_discriminator_training=False \
+               --discriminator_weight=0.0"
 
 BATCH_FLAGS="--sampling_batch=16 \
              --microbatch=16 \
@@ -38,7 +38,7 @@ INTERVAL_FLAGS="--eval_decoder_interval=2000 \
                  --save_period=2000 \
                  --log_interval=100"
 
-CKPT_FLAGS="--out_dir out/11-14_ffhq_stage3_128_no_recon \
+CKPT_FLAGS="--out_dir out/11-14_ffhq_stage3_128_no_discr_try-3 \
             --ref_path models/evaluation/ffhq_ref_batch_128.npz \
             --teacher_model_path models/mine/stage2_pgd_ffhq_072000.pt \
             --data_dir      /home/bratosiewicz/data/ffhq/train \

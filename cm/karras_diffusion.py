@@ -302,6 +302,8 @@ class KarrasDenoiser:
                                        recon=False, **model_kwargs):
         if step < self.args.pretraining_step:
             return self.null(x_start)
+        if self.args.decoder_discriminator_training == False:
+            return self.null(x_start)
         if learn_generator:
             if step % (2 * self.args.decoder_gan_frequency) == 0:
                 if recon:

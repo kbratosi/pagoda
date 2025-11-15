@@ -28,39 +28,38 @@ def load_feature_extractor(args, eval=True):
     return feature_extractor
 
 def load_discriminator_and_d_feature_extractor(image_size, discriminator_use_fp16, discriminator_class_cond, load_feature=False, load_discriminator=False):
-    if load_discriminator:
-        from pg_modules.projector import F_RandomProj
-        from pg_modules.discriminator import MultiScaleD
-        backbones = ['deit_base_distilled_patch16_224', 'tf_efficientnet_lite0']
-        discriminator, discriminator_feature_extractor = [], []
-        backbone_kwargs = {'im_res': image_size}
-        for i, bb_name in enumerate(backbones):
-            feat = F_RandomProj(bb_name, **backbone_kwargs)
-            if load_discriminator:
-                disc = MultiScaleD(
-                    channels=feat.CHANNELS,
-                    resolutions=feat.RESOLUTIONS,
-                    cond=discriminator_class_cond,
-                    **backbone_kwargs,
-                )
-            if load_feature:
-                discriminator_feature_extractor.append([bb_name, feat])
-            else:
-                del feat
-            if load_discriminator:
-                discriminator.append([bb_name, disc])
-        if load_feature:
-            discriminator_feature_extractor = nn.ModuleDict(discriminator_feature_extractor)
-            discriminator_feature_extractor = discriminator_feature_extractor.train(False).to(dist_util.dev())
-            discriminator_feature_extractor.requires_grad_(False)
+    from pg_modules.projector import F_RandomProj
+    from pg_modules.discriminator import MultiScaleD
+    backbones = ['deit_base_distilled_patch16_224', 'tf_efficientnet_lite0']
+    discriminator, discriminator_feature_extractor = [], []
+    backbone_kwargs = {'im_res': image_size}
+    for i, bb_name in enumerate(backbones):
+        feat = F_RandomProj(bb_name, **backbone_kwargs)
         if load_discriminator:
-            discriminator = nn.ModuleDict(discriminator)
-            discriminator.to(dist_util.dev())
-            discriminator.train()
+            disc = MultiScaleD(
+                channels=feat.CHANNELS,
+                resolutions=feat.RESOLUTIONS,
+                cond=discriminator_class_cond,
+                **backbone_kwargs,
+            )
+        if load_feature:
+            discriminator_feature_extractor.append([bb_name, feat])
+        else:
+            del feat
+        if load_discriminator:
+            discriminator.append([bb_name, disc])
+    if load_feature:
+        discriminator_feature_extractor = nn.ModuleDict(discriminator_feature_extractor)
+        discriminator_feature_extractor = discriminator_feature_extractor.train(False).to(dist_util.dev())
+        discriminator_feature_extractor.requires_grad_(False)
+    if load_discriminator:
+        discriminator = nn.ModuleDict(discriminator)
+        discriminator.to(dist_util.dev())
+        discriminator.train()
         if discriminator_use_fp16:
             discriminator.convert_to_fp16()
     else:
-        discriminator, discriminator_feature_extractor = None, None
+        discriminator = None
     return discriminator, discriminator_feature_extractor
 
 def gaussian_blur(args, img, step):
@@ -107,10 +106,10 @@ def get_xl_feature(args, estimate, target=None, feature_extractor=None, discrimi
         # apply augmentation (x in [-1, 1])
         with grad():
             brightness = (torch.rand(int(estimate.size(0) * args.prob_aug), 1, 1, 1, dtype=estimate.dtype,
-                                  device=estimate.device) - 0.5)
+                                device=estimate.device) - 0.5)
             # brightness = 0.
             saturation = (torch.rand(int(estimate.size(0) * args.prob_aug), 1, 1, 1, dtype=estimate.dtype,
-                                  device=estimate.device) * 2)
+                                device=estimate.device) * 2)
             # saturation = 0.
             contrast = (torch.rand(int(estimate.size(0) * args.prob_aug), 1, 1, 1, dtype=estimate.dtype,
                                 device=estimate.device) + 0.5)
@@ -118,15 +117,15 @@ def get_xl_feature(args, estimate, target=None, feature_extractor=None, discrimi
             shift_x, shift_y = int(estimate.size(2) * args.shift_ratio + 0.5), int(
                 estimate.size(3) * args.shift_ratio + 0.5)
             translation_x = torch.randint(-shift_x, shift_x + 1, size=[int(estimate.size(0) * args.prob_aug), 1, 1],
-                                       device=estimate.device)
+                                    device=estimate.device)
             translation_y = torch.randint(-shift_y, shift_y + 1, size=[int(estimate.size(0) * args.prob_aug), 1, 1],
-                                       device=estimate.device)
+                                    device=estimate.device)
             cutout_size = int(estimate.size(2) * args.cutout_ratio + 0.5), int(
                 estimate.size(3) * args.cutout_ratio + 0.5)
             offset_x = torch.randint(0, estimate.size(2) + (1 - cutout_size[0] % 2),
-                                  size=[int(estimate.size(0) * args.prob_aug), 1, 1], device=estimate.device)
+                                size=[int(estimate.size(0) * args.prob_aug), 1, 1], device=estimate.device)
             offset_y = torch.randint(0, estimate.size(3) + (1 - cutout_size[1] % 2),
-                                  size=[int(estimate.size(0) * args.prob_aug), 1, 1], device=estimate.device)
+                                size=[int(estimate.size(0) * args.prob_aug), 1, 1], device=estimate.device)
 
             estimate_feature = get_feature(args, estimate, feat, brightness, saturation, contrast,
                                                 translation_x, translation_y, offset_x, offset_y, 'estimate',
@@ -139,8 +138,8 @@ def get_xl_feature(args, estimate, target=None, feature_extractor=None, discrimi
                 if args.large_log:
                     print("estimate, estimate_low_res: ", estimate.shape, estimate_low_res.shape)
                 estimate_feature_low_res = get_feature(args, estimate_low_res, feat, brightness, saturation, contrast,
-                                               translation_x, translation_y, offset_x, offset_y, 'estimate_low_res',
-                                               step, decoder)
+                                            translation_x, translation_y, offset_x, offset_y, 'estimate_low_res',
+                                            step, decoder)
                 logits_fake += discriminator.module[bb_name + '_low'](estimate_feature_low_res, model_kwargs['y'])
 
         if target != None:
@@ -148,38 +147,38 @@ def get_xl_feature(args, estimate, target=None, feature_extractor=None, discrimi
                 if args.gan_real_free and args.gan_different_augment:
                     # apply augmentation (x in [-1, 1])
                     brightness = (torch.rand(int(target.size(0) * args.prob_aug), 1, 1, 1, dtype=target.dtype,
-                                             device=target.device) - 0.5)
+                                            device=target.device) - 0.5)
                     # brightness = 0.
                     saturation = (torch.rand(int(target.size(0) * args.prob_aug), 1, 1, 1, dtype=target.dtype,
-                                             device=target.device) * 2)
+                                            device=target.device) * 2)
                     # saturation = 0.
                     contrast = (torch.rand(int(target.size(0) * args.prob_aug), 1, 1, 1, dtype=target.dtype,
-                                           device=target.device) + 0.5)
+                                        device=target.device) + 0.5)
                     # contrast = 0.
                     shift_x, shift_y = int(target.size(2) * args.shift_ratio + 0.5), int(
                         target.size(3) * args.shift_ratio + 0.5)
                     translation_x = torch.randint(-shift_x, shift_x + 1, size=[int(target.size(0) * args.prob_aug), 1, 1],
-                                                  device=target.device)
+                                                device=target.device)
                     translation_y = torch.randint(-shift_y, shift_y + 1, size=[int(target.size(0) * args.prob_aug), 1, 1],
-                                                  device=target.device)
+                                                device=target.device)
                     cutout_size = int(target.size(2) * args.cutout_ratio + 0.5), int(
                         target.size(3) * args.cutout_ratio + 0.5)
                     offset_x = torch.randint(0, target.size(2) + (1 - cutout_size[0] % 2),
-                                             size=[int(target.size(0) * args.prob_aug), 1, 1], device=target.device)
+                                            size=[int(target.size(0) * args.prob_aug), 1, 1], device=target.device)
                     offset_y = torch.randint(0, target.size(3) + (1 - cutout_size[1] % 2),
-                                             size=[int(target.size(0) * args.prob_aug), 1, 1], device=target.device)
+                                            size=[int(target.size(0) * args.prob_aug), 1, 1], device=target.device)
 
                 target_feature = get_feature(args, target, feat, brightness, saturation, contrast,
-                                                  translation_x, translation_y, offset_x, offset_y, 'target',
-                                                  step, decoder)
+                                                translation_x, translation_y, offset_x, offset_y, 'target',
+                                                step, decoder)
                 target_features.append(target_feature)
             if discriminator is not None:
                 logits_real += discriminator.module[bb_name](target_feature, model_kwargs['y'])
                 if args.gan_low_res_train:
                     target_low_res = F.interpolate(target, 16, mode='bilinear', align_corners=False)
                     target_feature_low_res = get_feature(args, target_low_res, feat, brightness, saturation, contrast,
-                                                           translation_x, translation_y, offset_x, offset_y,
-                                                           'target_low_res', step, decoder)
+                                                        translation_x, translation_y, offset_x, offset_y,
+                                                        'target_low_res', step, decoder)
                     logits_real += discriminator.module[bb_name + '_low'](target_feature_low_res, model_kwargs['y'])
     if discriminator is not None:
         if target == None:

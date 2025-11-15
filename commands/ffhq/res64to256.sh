@@ -30,7 +30,7 @@ BATCH_FLAGS="--sampling_batch=7 \
 SIZE_FLAGS="--image_size=256 \
             --input_size=64 \
             --pretrained_input_size=64 \
-            --pretrained_output_size=256"
+            --pretrained_output_size=128"
 
 INTERVAL_FLAGS="--eval_decoder_interval=2500 \
                 --save_interval=2500 \
@@ -40,7 +40,7 @@ INTERVAL_FLAGS="--eval_decoder_interval=2500 \
 
 CKPT_FLAGS="--out_dir out/11-14_ffhq_stage3_256 \
             --ref_path models/evaluation/ffhq_ref_batch_256.npz \
-            --teacher_model_path out/11-12_ffhq_stage3_256/decoder_ema_0.9999_017500.pt \
+            --teacher_model_path models/mine/stage3_128_pgd_ffhq_066000.pt \
             --data_dir      /home/bratosiewicz/data/ffhq/train \
             --z_no_flip_dir /home/bratosiewicz/pagoda/out/ffhq-xz-no-flip \
             --z_flip_dir    /home/bratosiewicz/pagoda/out/ffhq-xz-flip"

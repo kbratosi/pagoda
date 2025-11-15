@@ -96,7 +96,7 @@ def main():
     # Load Discriminator
     decoder_discriminator, discriminator_feature_extractor = enc_dec_lib.load_discriminator_and_d_feature_extractor(args.image_size,
                                     args.discriminator_use_fp16, args.discriminator_class_cond,
-                                load_feature=args.decoder_discriminator_training, load_discriminator=args.decoder_discriminator_training)
+                                load_feature=True, load_discriminator=True)
     recon_discriminator, _ = enc_dec_lib.load_discriminator_and_d_feature_extractor(args.image_size,
                                     args.discriminator_use_fp16, args.discriminator_class_cond, load_feature=False, load_discriminator=args.recon_discriminator)
 
