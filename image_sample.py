@@ -11,7 +11,7 @@ import numpy as np
 import torch as th
 import torch.distributed as dist
 
-# from cm import dist_util, logger
+from cm import dist_util, logger
 from cm import logger
 from cm.script_util import (
     train_defaults,
